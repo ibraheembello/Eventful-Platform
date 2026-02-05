@@ -10,6 +10,7 @@
     "build:frontend": "cd client && npm install && npm run build && cd ..",
     "start": "node dist/server.js",
     "deploy:azure": "bash azure-deploy.sh",
+    "postinstall": "npm run build && npx prisma generate && npx prisma migrate deploy",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:prod": "prisma migrate deploy",
