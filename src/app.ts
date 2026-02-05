@@ -64,7 +64,7 @@ if (isProduction) {
   app.use(express.static(clientBuildPath));
 
   // Handle React routing - send all non-API requests to index.html
-  app.get('*', (_req, res) => {
+  app.get('/:path(*)', (_req, res) => {
     res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
 }
