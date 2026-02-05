@@ -64,7 +64,8 @@ if (isProduction) {
   app.use(express.static(clientBuildPath));
 
   // Handle React routing - send all non-API requests to index.html
-  app.get('/:path(*)', (_req, res) => {
+  // Using Express 5.x compatible wildcard route
+  app.use((_req, res) => {
     res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
 }
