@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CREATOR
+  EVENTEE
+}
+
+enum TicketStatus {
+  ACTIVE
+  USED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum ReminderUnit {
+  MINUTES
+  HOURS
+  DAYS
+  WEEKS
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  firstName     String
+  lastName      String
+  role          Role
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  events        Event[]        @relation("CreatorEvents")
+  tickets       Ticket[]
+  payments      Payment[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Event {
+  id                  String         @id @default(uuid())
+  title               String
+  description         String
+  date                DateTime
+  location            String
+  price               Float
+  capacity            Int
+  imageUrl            String?
+  category            String?
+  defaultReminderValue Int?
+  defaultReminderUnit  ReminderUnit?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  creatorId           String
+  creator             User           @relation("CreatorEvents", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  tickets             Ticket[]
+  payments            Payment[]
+  notifications       Notification[]
+
+  @@map("events")
+}
+
+model Ticket {
+  id          String       @id @default(uuid())
+  qrCode      String       @unique
+  qrCodeData  String
+  status      TicketStatus @default(ACTIVE)
+  scannedAt   DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  eventId     String
+  event       Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  paymentId   String       @unique
+  payment     Payment      @relation(fields: [paymentId], references: [id])
+
+  @@map("tickets")
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  amount            Float
+  status            PaymentStatus @default(PENDING)
+  paystackReference String        @unique
+  paystackAccessCode String?
+  paystackAuthUrl    String?
+  paidAt            DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  eventId           String
+  event             Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  ticket            Ticket?
+
+  @@map("payments")
+}
+
+model Notification {
+  id              String       @id @default(uuid())
+  reminderValue   Int
+  reminderUnit    ReminderUnit
+  reminderTime    DateTime
+  sent            Boolean      @default(false)
+  message         String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  eventId         String
+  event           Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
