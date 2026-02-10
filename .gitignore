@@ -5,3 +5,8 @@ dist/
 coverage/
 .DS_Store
 *.zip
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

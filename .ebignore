@@ -1,0 +1,16 @@
+# Elastic Beanstalk ignore file
+node_modules/
+.git/
+.env
+*.log
+npm-debug.log*
+.DS_Store
+*.zip
+.azure/
+azure-deploy.sh
+continue-deployment.sh
+AZURE_DEPLOYMENT_GUIDE.md
+DEPLOYMENT_READY.md
+web.config
+.deployment
+startup.sh
