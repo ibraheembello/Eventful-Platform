@@ -39,11 +39,11 @@ The Eventful Platform is running on an AWS EC2 instance in the **eu-west-2 (Lond
 
 ## Live URLs
 
-- **Frontend**: http://35.178.181.139:8080
-- **API**: http://35.178.181.139:8080/api
-- **Events**: http://35.178.181.139:8080/events
-- **Health Check**: http://35.178.181.139:8080/api/health
-- **API Docs**: http://35.178.181.139:8080/api/docs
+- **Frontend**: https://eventful-platform.com
+- **API**: https://eventful-platform.com/api
+- **Events**: https://eventful-platform.com/events
+- **Health Check**: https://eventful-platform.com/api/health
+- **API Docs**: https://eventful-platform.com/api/docs
 
 ---
 
@@ -52,7 +52,7 @@ The Eventful Platform is running on an AWS EC2 instance in the **eu-west-2 (Lond
 ### Quick Deploy (on EC2 via SSH)
 
 ```bash
-ssh -i "your-key.pem" ec2-user@35.178.181.139
+ssh -i "your-key.pem" bitnami@13.43.80.112
 cd /home/ec2-user/Eventful-Platform
 git pull origin master
 npm install
@@ -71,7 +71,7 @@ pm2 restart eventful-api
 ## Information You'll Need
 
 1. **SSH Key**: Your .pem file for EC2 access
-2. **EC2 Public IP**: 35.178.181.139
+2. **Static IP**: 13.43.80.112
 3. **PostgreSQL Password**: Set during initial setup
 4. **Paystack Keys**: From https://dashboard.paystack.com
 5. **JWT Secrets**: Generated random strings
@@ -224,7 +224,7 @@ pm2 restart all
 
 ```bash
 # SSH into EC2
-ssh -i "your-key.pem" ec2-user@35.178.181.139
+ssh -i "your-key.pem" bitnami@13.43.80.112
 
 # Deploy updates
 cd /home/ec2-user/Eventful-Platform && git pull origin master && npm install && pm2 restart eventful-api

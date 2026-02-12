@@ -81,8 +81,8 @@ aws ec2 authorize-security-group-ingress \
 chmod 400 your-key.pem
 
 # SSH into the instance
-ssh -i "your-key.pem" ec2-user@35.178.181.139
-# For Ubuntu: ssh -i "your-key.pem" ubuntu@35.178.181.139
+ssh -i "your-key.pem" bitnami@13.43.80.112
+# For Ubuntu: ssh -i "your-key.pem" ubuntu@13.43.80.112
 ```
 
 ### Step 4: Install Dependencies on EC2
@@ -164,7 +164,7 @@ JWT_ACCESS_SECRET=your_jwt_access_secret_here
 JWT_REFRESH_SECRET=your_jwt_refresh_secret_here
 PAYSTACK_SECRET_KEY=sk_test_your_key
 PAYSTACK_PUBLIC_KEY=pk_test_your_key
-CLIENT_URL=http://35.178.181.139:8080
+CLIENT_URL=https://eventful-platform.com
 EOF
 ```
 
@@ -227,13 +227,13 @@ Run this twice to get two different secrets for ACCESS and REFRESH tokens.
 ### View Application
 
 ```
-http://35.178.181.139:8080
+https://eventful-platform.com
 ```
 
 ### View API Documentation
 
 ```
-http://35.178.181.139:8080/api/docs
+https://eventful-platform.com/api/docs
 ```
 
 ### View Logs
@@ -252,7 +252,7 @@ pm2 logs eventful-api --err
 ### Check Health
 
 ```bash
-curl http://35.178.181.139:8080/api/health
+curl https://eventful-platform.com/api/health
 ```
 
 ---
@@ -287,7 +287,7 @@ jobs:
 ```
 
 Add these to GitHub Secrets:
-- `EC2_HOST`: `35.178.181.139`
+- `EC2_HOST`: `13.43.80.112`
 - `EC2_USER`: `ec2-user`
 - `EC2_SSH_KEY`: Contents of your .pem file
 
@@ -377,7 +377,7 @@ aws ec2 start-instances --instance-ids <instance-id>
 
 ## Setting Up a Friendly URL
 
-Your app currently runs at `http://35.178.181.139:8080` (raw IP). To get a friendly URL:
+Your app currently runs at `https://eventful-platform.com` (raw IP). To get a friendly URL:
 
 ### Option 1: Elastic IP (Prevents IP Changes)
 ```bash
@@ -451,7 +451,7 @@ sudo certbot --nginx -d yourdomain.com
 
 ```bash
 # SSH into EC2
-ssh -i "your-key.pem" ec2-user@35.178.181.139
+ssh -i "your-key.pem" bitnami@13.43.80.112
 
 # Deploy latest changes
 cd /home/ec2-user/Eventful-Platform && git pull origin master && npm install && pm2 restart eventful-api
