@@ -1,76 +1,80 @@
-# ✅ Deployment Ready - Eventful Platform
+# Deployment Ready - Eventful Platform
 
-## 🎉 Your Application is Ready for Azure Deployment!
+## Your Application is Deployed on AWS EC2!
 
-All preparation work is complete. Your Eventful Platform is now configured for single-deployment to Azure App Service in **UK South** region.
+The Eventful Platform is running on an AWS EC2 instance in the **eu-west-2 (London)** region.
 
 ---
 
-## 📦 What's Been Prepared
+## What's Been Done
 
-### ✅ Code Changes
+### Code Changes
 - [x] Backend configured to serve React frontend in production
 - [x] Build scripts updated for combined frontend + backend deployment
 - [x] API client configured for production URLs
 - [x] Express static file serving added
 - [x] Production environment detection implemented
+- [x] Redis made optional for environments without it
 
-### ✅ Deployment Files Created
-- [x] `azure-deploy.sh` - Automated deployment script
-- [x] `.deployment` - Azure deployment configuration
-- [x] `web.config` - IIS/Azure Web App configuration
-- [x] `AZURE_DEPLOYMENT_GUIDE.md` - Complete deployment documentation
+### Infrastructure
+- [x] EC2 instance launched in eu-west-2 (London)
+- [x] Security group configured (ports 22, 80, 8080)
+- [x] Node.js 20 LTS installed
+- [x] PM2 process manager installed
+- [x] PostgreSQL configured
+- [x] Application built and running
 
-### ✅ Configuration
-- [x] Resource names defined (UK South region)
-- [x] App Service Plan: B1 tier (~$40-60/month)
-- [x] PostgreSQL: Burstable B1ms (~$25-50/month)
-- [x] Node.js 18 LTS runtime
-
-### ✅ Features Working
-- [x] Authentication & Authorization ✓
-- [x] Event Management ✓
-- [x] Ticket Generation & QR Codes ✓
-- [x] Ticket Verification ✓
-- [x] Payment Integration (Paystack) ✓
-- [x] Analytics Dashboard ✓
-- [x] Reminders System ✓
-- [x] Dark Mode ✓
-- [x] Social Sharing ✓
+### Features Working
+- [x] Authentication & Authorization
+- [x] Event Management
+- [x] Ticket Generation & QR Codes
+- [x] Ticket Verification
+- [x] Payment Integration (Paystack)
+- [x] Analytics Dashboard
+- [x] Reminders System
+- [x] Dark Mode
+- [x] Social Sharing
 
 ---
 
-## 🚀 Ready to Deploy!
+## Live URLs
 
-### Quick Deploy (Recommended)
+- **Frontend**: http://35.178.181.139:8080
+- **API**: http://35.178.181.139:8080/api
+- **Events**: http://35.178.181.139:8080/events
+- **Health Check**: http://35.178.181.139:8080/api/health
+- **API Docs**: http://35.178.181.139:8080/api/docs
+
+---
+
+## Deploying Updates
+
+### Quick Deploy (on EC2 via SSH)
 
 ```bash
-npm run deploy:azure
+ssh -i "your-key.pem" ec2-user@35.178.181.139
+cd /home/ec2-user/Eventful-Platform
+git pull origin master
+npm install
+pm2 restart eventful-api
 ```
 
 **What this does:**
-1. Creates Resource Group in UK South
-2. Creates App Service + PostgreSQL
-3. Configures environment variables
-4. Builds frontend + backend
-5. Deploys to Azure
-6. Runs database migrations
+1. Pulls latest code from GitHub
+2. Installs dependencies and builds (via postinstall)
+3. Restarts the application
 
-**Duration:** ~15-20 minutes
-
-**Cost:** ~$40-105/month (can be stopped when not in use)
+**Duration:** ~5-10 minutes
 
 ---
 
-## 🔑 Information You'll Need During Deployment
+## Information You'll Need
 
-The script will prompt you for:
-
-1. **PostgreSQL Password** - Create a strong password (min 12 characters)
-2. **Paystack Secret Key** - Get from https://dashboard.paystack.com
-3. **Paystack Public Key** - Same dashboard
-4. **JWT Access Secret** - 32+ character random string
-5. **JWT Refresh Secret** - 32+ character random string
+1. **SSH Key**: Your .pem file for EC2 access
+2. **EC2 Public IP**: 35.178.181.139
+3. **PostgreSQL Password**: Set during initial setup
+4. **Paystack Keys**: From https://dashboard.paystack.com
+5. **JWT Secrets**: Generated random strings
 
 ### Generate JWT Secrets
 
@@ -81,235 +85,166 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ---
 
-## 📋 Deployment Steps
-
-### Step 1: Ensure You're Logged Into Azure
-
-```bash
-az login
-# Select subscription: MSDN Platforms Subscription
-```
-
-✅ Already done!
-
-### Step 2: Run Deployment
-
-```bash
-cd "c:\Users\bello\Desktop\Altschool Africa Projects\Eventful Api"
-npm run deploy:azure
-```
-
-### Step 3: Wait for Completion
-
-Watch the terminal output. The script will:
-- ✅ Create Azure resources
-- ✅ Build application
-- ✅ Deploy code
-- ✅ Run migrations
-
-### Step 4: Test Your Deployment
-
-Visit: `https://eventful-api.azurewebsites.net`
-
-Check health: `https://eventful-api.azurewebsites.net/api/health`
-
-View API docs: `https://eventful-api.azurewebsites.net/api/docs`
-
----
-
-## 🎯 Post-Deployment
+## Managing the Application
 
 ### View Logs
 
 ```bash
-az webapp log tail \
-  --resource-group eventful-platform-prod \
-  --name eventful-api
+pm2 logs eventful-api
 ```
 
 ### Restart Application
 
 ```bash
-az webapp restart \
-  --resource-group eventful-platform-prod \
-  --name eventful-api
+pm2 restart eventful-api
 ```
 
-### Update Environment Variable
+### Stop Application
 
 ```bash
-az webapp config appsettings set \
-  --resource-group eventful-platform-prod \
-  --name eventful-api \
-  --settings KEY="value"
+pm2 stop eventful-api
+```
+
+### Check Status
+
+```bash
+pm2 status
 ```
 
 ---
 
-## 🌐 Your Live URLs
+## Tips
 
-After deployment:
-
-- **Frontend:** https://eventful-api.azurewebsites.net
-- **API:** https://eventful-api.azurewebsites.net/api
-- **Health Check:** https://eventful-api.azurewebsites.net/api/health
-- **API Docs:** https://eventful-api.azurewebsites.net/api/docs
-
----
-
-## 💡 Tips
-
-1. **First Deployment Takes Longer** (~20 min)
-   - Subsequent deployments are faster (~5-10 min)
+1. **First deployment is complete** - subsequent updates are faster (~5 min)
 
 2. **Cold Start**
-   - First request after idle may take 30-60 seconds
-   - App warms up after first request
+   - First request after idle may take a few seconds
+   - PM2 keeps the app running, so cold starts are rare
 
 3. **Database Migrations**
-   - Automatically run during deployment
+   - Automatically run during `npm install` (via postinstall)
    - Check logs if migrations fail
 
 4. **Environment Variables**
-   - All sensitive data stored securely in Azure
+   - Stored in `.env` file on EC2
    - Never committed to Git
 
 5. **Cost Management**
-   - Stop resources when not needed
-   - Upgrade to P1V3 for better performance (if needed)
+   - t2.micro is free tier eligible
+   - Stop the instance when not needed to save costs
 
 ---
 
-## 🔒 Security Checklist
+## Security Checklist
 
 - [x] All secrets in environment variables (not in code)
-- [x] HTTPS enabled by default on Azure
-- [x] PostgreSQL firewall configured
+- [x] Security group restricts access
 - [x] JWT tokens properly secured
 - [x] CORS configured correctly
 - [x] Rate limiting enabled
 - [x] Helmet security headers applied
+- [ ] Set up HTTPS with SSL (recommended)
+- [ ] Restrict SSH to your IP only (recommended)
 
 ---
 
-## 📊 Monitoring
+## Monitoring
 
 ### Check Application Status
 
 ```bash
-az webapp show \
-  --resource-group eventful-platform-prod \
-  --name eventful-api \
-  --query state
+pm2 status
 ```
 
-### View Resource Group
+### View Resource Usage
 
 ```bash
-az resource list \
-  --resource-group eventful-platform-prod \
-  --output table
+pm2 monit
 ```
 
-### Database Status
+### Check EC2 Instance
 
 ```bash
-az postgres flexible-server show \
-  --resource-group eventful-platform-prod \
-  --name eventful-postgres-db
+aws ec2 describe-instances --instance-ids <instance-id> --query 'Reservations[0].Instances[0].State.Name'
 ```
 
 ---
 
-## 🆘 Troubleshooting
+## Troubleshooting
 
-### Build Failed?
+### App Not Responding?
 ```bash
+# Check PM2 status
+pm2 status
 # Check logs
-tail -f /path/to/build/logs
-# Verify Node version
-node --version  # Should be 18+
-```
-
-### Deployment Failed?
-```bash
-# Check Azure logs
-az webapp log tail --resource-group eventful-platform-prod --name eventful-api
-# Verify all secrets are set
-az webapp config appsettings list --resource-group eventful-platform-prod --name eventful-api
+pm2 logs eventful-api --lines 50
+# Restart
+pm2 restart eventful-api
 ```
 
 ### Database Connection Failed?
 ```bash
-# Test connection
-az postgres flexible-server connect \
-  --name eventful-postgres-db \
-  --admin-user eventfuladmin
+# Check PostgreSQL is running
+sudo systemctl status postgresql
+# Restart if needed
+sudo systemctl restart postgresql
+```
+
+### Out of Memory?
+```bash
+# Check memory usage
+free -m
+# Restart PM2 to free memory
+pm2 restart all
 ```
 
 ---
 
-## 🎓 What You've Achieved
+## What You've Achieved
 
-✅ Full-stack event ticketing platform
-✅ Production-ready architecture
-✅ Secure payment processing
-✅ QR code ticket system
-✅ Analytics dashboard
-✅ Automated deployment pipeline
-✅ Scalable Azure infrastructure
-✅ Professional documentation
+- Full-stack event ticketing platform
+- Production-ready architecture
+- Secure payment processing
+- QR code ticket system
+- Analytics dashboard
+- Deployed on AWS EC2
+- Professional documentation
 
 ---
 
-## 🚀 You're Ready!
+## Need Help?
 
-Everything is configured and tested. Just run:
+- **AWS EC2 Documentation:** https://docs.aws.amazon.com/ec2/
+- **PM2 Documentation:** https://pm2.keymetrics.io/docs/
+- **Project Issues:** Check AWS_DEPLOYMENT_GUIDE.md
+
+---
+
+## Quick Reference Card
 
 ```bash
-npm run deploy:azure
-```
+# SSH into EC2
+ssh -i "your-key.pem" ec2-user@35.178.181.139
 
-And watch your application go live!
+# Deploy updates
+cd /home/ec2-user/Eventful-Platform && git pull origin master && npm install && pm2 restart eventful-api
 
----
-
-## 📞 Need Help?
-
-- **Azure Documentation:** https://docs.microsoft.com/azure
-- **Azure CLI Reference:** `az webapp --help`
-- **Project Issues:** Check AZURE_DEPLOYMENT_GUIDE.md
-
----
-
-**Good luck with your deployment! 🎉**
-
----
-
-### Quick Reference Card
-
-```bash
-# Deploy
-npm run deploy:azure
-
-# View Logs
-az webapp log tail --resource-group eventful-platform-prod --name eventful-api
+# View logs
+pm2 logs eventful-api
 
 # Restart
-az webapp restart --resource-group eventful-platform-prod --name eventful-api
+pm2 restart eventful-api
 
-# Stop (save costs)
-az webapp stop --resource-group eventful-platform-prod --name eventful-api
-az postgres flexible-server stop --resource-group eventful-platform-prod --name eventful-postgres-db
+# Stop app
+pm2 stop eventful-api
 
-# Start
-az webapp start --resource-group eventful-platform-prod --name eventful-api
-az postgres flexible-server start --resource-group eventful-platform-prod --name eventful-postgres-db
+# Stop EC2 (save costs)
+aws ec2 stop-instances --instance-ids <instance-id>
 
-# Delete everything
-az group delete --name eventful-platform-prod --yes
+# Start EC2
+aws ec2 start-instances --instance-ids <instance-id>
 ```
 
 ---
 
-**Built with ❤️ for AltSchool Africa Final Semester Project**
+**Built for AltSchool Africa Final Semester Project**

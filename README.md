@@ -1,46 +1,48 @@
-# 🎉 Eventful - Event Ticketing Platform
+# Eventful - Event Ticketing Platform
 
 A complete, production-ready event ticketing platform built with modern technologies. Eventful allows creators to host events and manage ticket sales, while eventees can discover, purchase tickets, and receive QR-coded digital tickets with automated reminders.
 
 **AltSchool Africa Capstone Project**
 
+**Live URL**: http://35.178.181.139:8080
+
 ---
 
-## ✨ Features
+## Features
 
 ### For Event Creators (CREATOR role)
-- 📅 **Event Management** - Create, update, and delete events with rich details
-- 💳 **Payment Dashboard** - Track all ticket sales and revenue analytics
-- 📊 **Analytics** - View comprehensive statistics (total events, attendees, revenue)
-- 🔍 **QR Ticket Verification** - Scan and verify attendee tickets at events
-- 👥 **Attendee Management** - See list of attendees for each event
+- **Event Management** - Create, update, and delete events with rich details
+- **Payment Dashboard** - Track all ticket sales and revenue analytics
+- **Analytics** - View comprehensive statistics (total events, attendees, revenue)
+- **QR Ticket Verification** - Scan and verify attendee tickets at events
+- **Attendee Management** - See list of attendees for each event
 
 ### For Event Attendees (EVENTEE role)
-- 🎫 **Event Discovery** - Browse and search all available events
-- 🛒 **Ticket Purchase** - Secure payment integration with Paystack
-- 📱 **Digital Tickets** - QR-coded tickets delivered instantly
-- 🔔 **Smart Reminders** - Customizable event notifications (Minutes/Hours/Days/Weeks before)
-- 📤 **Social Sharing** - Share events on Twitter, Facebook, LinkedIn, WhatsApp, Email
+- **Event Discovery** - Browse and search all available events
+- **Ticket Purchase** - Secure payment integration with Paystack
+- **Digital Tickets** - QR-coded tickets delivered instantly
+- **Smart Reminders** - Customizable event notifications (Minutes/Hours/Days/Weeks before)
+- **Social Sharing** - Share events on Twitter, Facebook, LinkedIn, WhatsApp, Email
 
 ### Platform Features
-- 🔐 **Authentication & Authorization** - JWT-based auth with role-based access control
-- 🌓 **Dark Mode** - Beautiful light/dark theme with smooth transitions
-- 📱 **Responsive Design** - Luma-inspired UI that works on all devices
-- ⚡ **Real-time Updates** - Instant feedback and live capacity tracking
-- 🔒 **Secure Payments** - PCI-compliant payment processing via Paystack
-- 🚀 **Performance Optimized** - Redis caching, rate limiting, efficient database queries
-- 📖 **API Documentation** - Interactive Swagger/OpenAPI docs
-- ✅ **Fully Tested** - 60 unit and integration tests (58/60 passing)
+- **Authentication & Authorization** - JWT-based auth with role-based access control
+- **Dark Mode** - Beautiful light/dark theme with smooth transitions
+- **Responsive Design** - Luma-inspired UI that works on all devices
+- **Real-time Updates** - Instant feedback and live capacity tracking
+- **Secure Payments** - PCI-compliant payment processing via Paystack
+- **Performance Optimized** - Redis caching, rate limiting, efficient database queries
+- **API Documentation** - Interactive Swagger/OpenAPI docs
+- **Fully Tested** - 60 unit and integration tests (58/60 passing)
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 ### Backend
 - **Runtime**: Node.js 18+ with TypeScript
 - **Framework**: Express.js v5
 - **Database**: PostgreSQL with Prisma ORM
-- **Cache**: Redis (ioredis)
+- **Cache**: Redis (ioredis) - optional
 - **Authentication**: JWT (jsonwebtoken + bcryptjs)
 - **Payment**: Paystack API
 - **QR Codes**: qrcode library with crypto-signed tokens
@@ -61,24 +63,29 @@ A complete, production-ready event ticketing platform built with modern technolo
 - **Notifications**: react-hot-toast
 - **Date Handling**: date-fns
 
+### Infrastructure
+- **Cloud**: AWS EC2 (eu-west-2 / London)
+- **Process Manager**: PM2
+- **Database**: PostgreSQL
+
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 - **Node.js** 18+ and npm
 - **PostgreSQL** 13+
-- **Redis** 6+
+- **Redis** 6+ (optional)
 - **Paystack Account** (test keys for development)
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repo-url>
-cd eventful-api
+git clone https://github.com/ibraheembello/Eventful-Platform.git
+cd Eventful-Platform
 ```
 
 ### 2. Install Dependencies
@@ -101,7 +108,7 @@ Create a `.env` file in the project root:
 # Database
 DATABASE_URL=postgresql://postgres:your_password@localhost:5432/eventful_db?schema=public
 
-# Redis
+# Redis (optional)
 REDIS_URL=redis://localhost:6379
 
 # JWT Secrets (generate your own)
@@ -140,7 +147,7 @@ The seed will create:
 
 ### 5. Start Services
 
-**Terminal 1 - Redis**:
+**Terminal 1 - Redis** (optional):
 ```bash
 redis-server
 ```
@@ -165,7 +172,7 @@ npm run dev
 
 ---
 
-## 🧪 Running Tests
+## Running Tests
 
 ```bash
 # Run all tests
@@ -185,7 +192,7 @@ npm test -- --coverage
 
 ---
 
-## 📐 Project Structure
+## Project Structure
 
 ```
 eventful-api/
@@ -241,7 +248,7 @@ eventful-api/
 
 ---
 
-## 🔐 API Authentication
+## API Authentication
 
 All protected endpoints require a JWT access token in the Authorization header:
 
@@ -258,17 +265,17 @@ Authorization: Bearer <your_access_token>
 
 ---
 
-## 💳 Payment Flow
+## Payment Flow
 
 ### For Eventees (Buying Tickets):
 
-1. **Select Event** → Navigate to event detail page
-2. **Click "Get Ticket"** → Initiates payment
-3. **Redirected to Paystack** → Complete payment securely
-4. **Payment Callback** → Returns to app with reference
-5. **Verification** → App verifies payment with Paystack
-6. **Ticket Generated** → QR code ticket created instantly
-7. **Reminder Created** → Auto-created based on event settings
+1. **Select Event** - Navigate to event detail page
+2. **Click "Get Ticket"** - Initiates payment
+3. **Redirected to Paystack** - Complete payment securely
+4. **Payment Callback** - Returns to app with reference
+5. **Verification** - App verifies payment with Paystack
+6. **Ticket Generated** - QR code ticket created instantly
+7. **Reminder Created** - Auto-created based on event settings
 
 ### Testing Payments
 
@@ -279,7 +286,7 @@ Use Paystack test cards:
 
 ---
 
-## 📊 API Endpoints
+## API Endpoints
 
 ### Authentication
 - `POST /api/auth/register` - Register new user
@@ -321,7 +328,7 @@ Use Paystack test cards:
 
 ---
 
-## 🎨 Design System
+## Design System
 
 ### Color Palette (CSS Variables)
 
@@ -339,7 +346,7 @@ The app uses a custom design system inspired by Luma:
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Rate Limiting
 
@@ -349,7 +356,7 @@ The app uses a custom design system inspired by Luma:
 
 ### Caching Strategy
 
-Redis caching is applied to:
+Redis caching is applied to (when Redis is available):
 - User profiles (5 minutes TTL)
 - Event lists (2 minutes TTL)
 - Analytics data (5 minutes TTL)
@@ -357,19 +364,19 @@ Redis caching is applied to:
 
 ---
 
-## 🐛 Known Issues
+## Known Issues
 
 1. **Payment Integration Tests**: 2/10 payment integration tests fail due to Paystack API mocking edge cases (does not affect functionality)
 2. **CSS Inline Styles Warning**: Progress bars use inline styles for dynamic width (acceptable for this use case)
 
 ---
 
-## 📝 Environment Variables Reference
+## Environment Variables Reference
 
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@localhost:5432/db` |
-| `REDIS_URL` | Redis connection string | `redis://localhost:6379` |
+| `REDIS_URL` | Redis connection string (optional) | `redis://localhost:6379` |
 | `JWT_ACCESS_SECRET` | Secret for access tokens | Random 32+ char string |
 | `JWT_REFRESH_SECRET` | Secret for refresh tokens | Random 32+ char string |
 | `PAYSTACK_SECRET_KEY` | Paystack secret key | `sk_test_...` |
@@ -379,66 +386,70 @@ Redis caching is applied to:
 
 ---
 
-## 🚢 Deployment
+## Deployment
 
-### Backend Deployment (Railway/Render)
+### Production (AWS EC2)
 
-1. **Create PostgreSQL database**
-2. **Create Redis instance**
-3. **Set environment variables**
-4. **Deploy**:
-   ```bash
-   npm run build
-   npm start
-   ```
+The application is deployed on AWS EC2 in eu-west-2 (London):
 
-### Frontend Deployment (Vercel/Netlify)
+```bash
+# SSH into EC2
+ssh -i "your-key.pem" ec2-user@35.178.181.139
 
-1. **Update API URL** in `client/src/lib/api.ts`
-2. **Build**:
-   ```bash
-   cd client
-   npm run build
-   ```
-3. **Deploy** `client/dist` folder
+# Deploy latest changes
+cd /home/ec2-user/Eventful-Platform
+git pull origin master
+npm install
+pm2 restart eventful-api
+```
+
+See [AWS_DEPLOYMENT_GUIDE.md](AWS_DEPLOYMENT_GUIDE.md) for full deployment instructions.
+
+### Local Production Build
+
+```bash
+npm run build
+npm start
+```
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 This is a capstone project, but feedback and suggestions are welcome!
 
 ---
 
-## 📄 License
+## License
 
 MIT License - feel free to use this project for learning purposes.
 
 ---
 
-## 👨‍💻 Author
+## Author
 
-**Oga (EVENTEE)**
+**Ibrahim Bello**
 AltSchool Africa - Backend Engineering (Node.js) Track
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **AltSchool Africa** for the learning opportunity
 - **Luma** for design inspiration
 - **Paystack** for payment infrastructure
 - **Prisma** for excellent database tooling
+- **AWS** for cloud infrastructure
 
 ---
 
-## 📞 Support
+## Support
 
 For issues or questions:
 - Open an issue on GitHub
-- Check the [API Documentation](http://localhost:3000/api/docs)
+- Check the [API Documentation](http://35.178.181.139:8080/api/docs)
 - Review test files for usage examples
 
 ---
 
-**Built with ❤️ for AltSchool Africa Final Semester Project**
+**Built for AltSchool Africa Final Semester Project**

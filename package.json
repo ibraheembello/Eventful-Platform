@@ -9,7 +9,7 @@
     "build:backend": "tsc",
     "build:frontend": "cd client && npm install && npm run build && cd ..",
     "start": "node dist/server.js",
-    "deploy:azure": "bash azure-deploy.sh",
+    "deploy": "echo 'Deploy via SSH: ssh into EC2 and run git pull + pm2 restart'",
     "postinstall": "npm run build && npx prisma generate && npx prisma migrate deploy",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
