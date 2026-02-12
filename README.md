@@ -4,7 +4,7 @@ A complete, production-ready event ticketing platform built with modern technolo
 
 **AltSchool Africa Capstone Project**
 
-**Live URL**: http://35.178.181.139:8080
+**Live URL**: https://eventful-platform.com
 
 ---
 
@@ -64,8 +64,11 @@ A complete, production-ready event ticketing platform built with modern technolo
 - **Date Handling**: date-fns
 
 ### Infrastructure
-- **Cloud**: AWS EC2 (eu-west-2 / London)
+- **Cloud**: AWS Lightsail (eu-west-2 / London)
 - **Process Manager**: PM2
+- **Web Server**: Apache (reverse proxy + SSL)
+- **Domain**: eventful-platform.com (Route 53)
+- **SSL**: Let's Encrypt (auto-renewing)
 - **Database**: PostgreSQL
 
 ---
@@ -388,16 +391,20 @@ Redis caching is applied to (when Redis is available):
 
 ## Deployment
 
-### Production (AWS EC2)
+### Production (AWS Lightsail)
 
-The application is deployed on AWS EC2 in eu-west-2 (London):
+The application is deployed on AWS Lightsail in eu-west-2 (London):
+
+- **Live**: https://eventful-platform.com
+- **API Docs**: https://eventful-platform.com/api/docs
+- **Health Check**: https://eventful-platform.com/api/health
 
 ```bash
-# SSH into EC2
-ssh -i "your-key.pem" ec2-user@35.178.181.139
+# SSH into server
+ssh -i "lightsail_key.pem" bitnami@13.43.80.112
 
 # Deploy latest changes
-cd /home/ec2-user/Eventful-Platform
+cd /home/bitnami/Eventful-Platform
 git pull origin master
 npm install
 pm2 restart eventful-api
@@ -447,7 +454,7 @@ AltSchool Africa - Backend Engineering (Node.js) Track
 
 For issues or questions:
 - Open an issue on GitHub
-- Check the [API Documentation](http://35.178.181.139:8080/api/docs)
+- Check the [API Documentation](https://eventful-platform.com/api/docs)
 - Review test files for usage examples
 
 ---
