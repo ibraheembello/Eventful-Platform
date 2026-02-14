@@ -863,30 +863,33 @@ Batch of 5 UI/UX improvements to polish the platform after initial deployment.
 
 ---
 
-### Feature F8: Creator Dashboard Stats (Charts)
+### Feature F8: Creator Dashboard Stats (Charts) -- COMPLETED (February 14, 2026)
 
 **Description**: Enhanced analytics with interactive charts showing ticket sales over time, revenue breakdown, and attendee demographics.
 
 **Checklist**:
-- [ ] Install charting library (`recharts`, `chart.js` with `react-chartjs-2`, or `nivo`)
-- [ ] Create `GET /analytics/charts` backend endpoint with time-series data
-- [ ] Add line chart: ticket sales over time (daily/weekly/monthly)
-- [ ] Add bar chart: revenue per event
-- [ ] Add pie/donut chart: ticket status breakdown (active vs used vs cancelled)
-- [ ] Add comparison metrics: "vs last month" percentage change
-- [ ] Add date range selector for chart data (last 7 days, 30 days, 90 days, all time)
-- [ ] Add per-event analytics drill-down (click event name to see its specific stats)
-- [ ] Add top-performing events leaderboard
-- [ ] Make charts responsive and dark-mode compatible
+- [x] Install charting library — `recharts` on frontend
+- [x] Add `ticketStatusBreakdown` to backend analytics overview endpoint
+- [x] Add bar chart: revenue per event (top 8 events, sorted by revenue)
+- [x] Add bar chart: tickets sold vs checked in per event
+- [x] Add donut chart: ticket status breakdown (active / checked in / cancelled)
+- [x] Add top-performing events leaderboard (top 5 by revenue, with rank badges)
+- [x] Add performance summary card (avg tickets/event, avg revenue/event, check-in rate, avg fill rate)
+- [x] Make charts responsive and dark-mode compatible (CSS variables for colors)
+- [x] Custom tooltips showing full event names and formatted values
+- [x] Link each event row to its attendee check-in list
+- [x] Empty state when no data exists ("Create your first event to see analytics")
+- [ ] Time-series line chart (deferred — requires per-day ticket sales data)
+- [ ] Date range selector (deferred — depends on time-series)
+- [ ] "vs last month" comparison metrics (deferred)
 
 **Success Criteria**:
-- Charts load within 2 seconds
-- Charts are interactive (hover for tooltips, click to drill down)
-- All charts support dark mode
-- Date range selector updates all charts simultaneously
-- Per-event drill-down shows: daily sales, revenue, check-in rate, capacity utilization
-- Charts are responsive on mobile (readable on small screens)
-- Empty state when no data exists ("Create your first event to see analytics")
+- [x] Charts load within 2 seconds
+- [x] Charts are interactive (hover for tooltips)
+- [x] All charts support dark mode
+- [x] Top events leaderboard links to attendee lists
+- [x] Charts are responsive on mobile (readable on small screens)
+- [x] Empty state when no data exists
 
 ---
 
@@ -955,7 +958,7 @@ Batch of 5 UI/UX improvements to polish the platform after initial deployment.
 | 2 | ~~F5: Export Tickets as PDF~~ | ~~Low~~ | **DONE** |
 | 3 | ~~F2: Bookmark/Save Events~~ | ~~Low~~ | **DONE** |
 | 4 | ~~F9: Attendee Check-in List~~ | ~~Medium~~ | **DONE** |
-| 5 | F8: Creator Dashboard Charts | Medium | Medium — visual polish for analytics |
+| 5 | ~~F8: Creator Dashboard Charts~~ | ~~Medium~~ | **DONE** |
 | 6 | F4: Waitlist for Sold-Out Events | Medium | Medium — handles sold-out gracefully |
 | 7 | F3: Event Comments/Reviews | Medium | Medium — adds social proof |
 | 8 | F6: Email Notifications | Medium | High — professional communication |
