@@ -21,7 +21,7 @@ export default function Events() {
     api.get('/events', { params: { page, limit, search: search || undefined } })
       .then((res) => {
         setEvents(res.data.data);
-        setTotalPages(res.data.pagination?.pages || 1);
+        setTotalPages(res.data.pagination?.totalPages || res.data.pagination?.pages || 1);
         setTotalEvents(res.data.pagination?.total || 0);
       })
       .catch(() => {})
