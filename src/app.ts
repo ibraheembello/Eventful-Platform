@@ -17,6 +17,7 @@ import ticketRoutes from './modules/tickets/ticket.routes';
 import paymentRoutes from './modules/payments/payment.routes';
 import notificationRoutes from './modules/notifications/notification.routes';
 import analyticsRoutes from './modules/analytics/analytics.routes';
+import uploadRoutes from './modules/upload/upload.routes';
 
 dotenv.config();
 
@@ -24,7 +25,9 @@ const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Security & parsing middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
@@ -50,6 +53,10 @@ app.use('/api/tickets', ticketRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/upload', uploadRoutes);
+
+// Serve uploaded images
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Health check
 app.get('/api/health', (_req, res) => {

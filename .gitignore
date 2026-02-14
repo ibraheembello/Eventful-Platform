@@ -5,6 +5,7 @@ dist/
 coverage/
 .DS_Store
 *.zip
+uploads/
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
