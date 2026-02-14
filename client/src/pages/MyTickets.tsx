@@ -62,7 +62,7 @@ Status: ${ticket.status}
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-600 border-t-transparent"></div>
       </div>
     );
   }
@@ -70,19 +70,21 @@ Status: ${ticket.status}
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-          <HiTicket className="text-indigo-600" /> My Tickets
+        <h1 className="text-3xl font-bold text-[rgb(var(--text-primary))] flex items-center gap-2">
+          <HiTicket className="text-emerald-600 dark:text-emerald-400" /> My Tickets
         </h1>
       </div>
 
       {tickets.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <HiTicket className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No Tickets Yet</h3>
-          <p className="text-gray-600 mb-6">You haven't purchased any tickets yet.</p>
+        <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-12 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[rgb(var(--bg-tertiary))] mb-4">
+            <HiTicket className="w-8 h-8 text-[rgb(var(--text-tertiary))]" />
+          </div>
+          <h3 className="text-xl font-semibold text-[rgb(var(--text-primary))] mb-2">No Tickets Yet</h3>
+          <p className="text-[rgb(var(--text-secondary))] mb-6">You haven't purchased any tickets yet.</p>
           <a
             href="/events"
-            className="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            className="inline-block px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
           >
             Browse Events
           </a>
@@ -91,36 +93,36 @@ Status: ${ticket.status}
         <>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {tickets.map((ticket) => (
-              <div key={ticket.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
+              <div key={ticket.id} className="glass border border-[rgb(var(--border-primary))] rounded-2xl overflow-hidden card-hover">
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+                    <h3 className="text-lg font-semibold text-[rgb(var(--text-primary))] line-clamp-2">
                       {ticket.event.title}
                     </h3>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      ticket.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
-                      ticket.status === 'USED' ? 'bg-gray-100 text-gray-800' :
-                      'bg-red-100 text-red-800'
+                    <span className={`px-2.5 py-1 text-xs rounded-full font-medium ${
+                      ticket.status === 'ACTIVE' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' :
+                      ticket.status === 'USED' ? 'bg-[rgb(var(--bg-tertiary))] text-[rgb(var(--text-secondary))]' :
+                      'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300'
                     }`}>
                       {ticket.status}
                     </span>
                   </div>
 
-                  <div className="space-y-2 text-sm text-gray-600 mb-4">
+                  <div className="space-y-2 text-sm text-[rgb(var(--text-secondary))] mb-4">
                     <p>
-                      <span className="font-semibold">Date:</span>{' '}
+                      <span className="font-semibold text-[rgb(var(--text-primary))]">Date:</span>{' '}
                       {format(new Date(ticket.event.date), 'PPP')}
                     </p>
                     <p>
-                      <span className="font-semibold">Time:</span>{' '}
+                      <span className="font-semibold text-[rgb(var(--text-primary))]">Time:</span>{' '}
                       {format(new Date(ticket.event.date), 'p')}
                     </p>
                     <p>
-                      <span className="font-semibold">Location:</span>{' '}
+                      <span className="font-semibold text-[rgb(var(--text-primary))]">Location:</span>{' '}
                       {ticket.event.location}
                     </p>
                     {ticket.scannedAt && (
-                      <p className="text-gray-500">
+                      <p className="text-[rgb(var(--text-tertiary))]">
                         <span className="font-semibold">Scanned:</span>{' '}
                         {format(new Date(ticket.scannedAt), 'PPP p')}
                       </p>
@@ -130,13 +132,13 @@ Status: ${ticket.status}
                   <div className="flex gap-2">
                     <button
                       onClick={() => setSelectedTicket(ticket)}
-                      className="flex-1 px-3 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-1"
+                      className="flex-1 px-3 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition flex items-center justify-center gap-1"
                     >
                       <HiQrcode className="w-4 h-4" /> View QR
                     </button>
                     <button
                       onClick={() => downloadTicket(ticket)}
-                      className="px-3 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition"
+                      className="px-3 py-2 bg-[rgb(var(--bg-tertiary))] text-[rgb(var(--text-secondary))] text-sm rounded-lg hover:bg-[rgb(var(--border-primary))] transition"
                     >
                       <HiDownload className="w-4 h-4" />
                     </button>
@@ -151,17 +153,17 @@ Status: ${ticket.status}
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="px-4 py-2 border border-[rgb(var(--border-primary))] rounded-lg bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[rgb(var(--bg-secondary))]"
               >
                 Previous
               </button>
-              <span className="text-gray-600">
+              <span className="text-[rgb(var(--text-secondary))]">
                 Page {page} of {totalPages}
               </span>
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                className="px-4 py-2 border border-[rgb(var(--border-primary))] rounded-lg bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[rgb(var(--bg-secondary))]"
               >
                 Next
               </button>
@@ -173,7 +175,7 @@ Status: ${ticket.status}
       {/* QR Code Modal */}
       {selectedTicket && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
           onClick={() => setSelectedTicket(null)}
         >
           <div
@@ -213,13 +215,13 @@ Status: ${ticket.status}
               <div className="flex items-center justify-center gap-2 mb-4">
                 {selectedTicket.status === 'ACTIVE' ? (
                   <>
-                    <HiCheckCircle className="w-5 h-5 text-green-500" />
-                    <span className="font-semibold text-green-600 dark:text-green-400">Active</span>
+                    <HiCheckCircle className="w-5 h-5 text-emerald-500" />
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">Active</span>
                   </>
                 ) : selectedTicket.status === 'USED' ? (
                   <>
-                    <HiCheckCircle className="w-5 h-5 text-gray-500" />
-                    <span className="font-semibold text-gray-600 dark:text-gray-400">Used</span>
+                    <HiCheckCircle className="w-5 h-5 text-[rgb(var(--text-tertiary))]" />
+                    <span className="font-semibold text-[rgb(var(--text-secondary))]">Used</span>
                   </>
                 ) : (
                   <>
@@ -232,7 +234,7 @@ Status: ${ticket.status}
               <button
                 type="button"
                 onClick={() => setSelectedTicket(null)}
-                className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
               >
                 Close
               </button>

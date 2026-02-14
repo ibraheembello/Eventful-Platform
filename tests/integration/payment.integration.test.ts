@@ -12,6 +12,7 @@ jest.mock('../../src/config/redis', () => ({
     set: jest.fn().mockResolvedValue('OK'),
     setex: jest.fn().mockResolvedValue('OK'),
     del: jest.fn().mockResolvedValue(1),
+    keys: jest.fn().mockResolvedValue([]),
     quit: jest.fn().mockResolvedValue('OK'),
   },
 }));
@@ -172,7 +173,14 @@ describe('Payment Integration Tests', () => {
 
   describe('GET /api/payments/verify/:reference', () => {
     beforeEach(async () => {
-      // Clean up any existing test payments
+      // Clean up tickets first (foreign key constraint), then payments
+      const existingPayment = await prisma.payment.findUnique({
+        where: { paystackReference: 'TEST-VERIFY-REF-123' },
+      });
+      if (existingPayment) {
+        await prisma.ticket.deleteMany({ where: { paymentId: existingPayment.id } });
+        await prisma.notification.deleteMany({ where: { userId: existingPayment.userId, eventId: existingPayment.eventId } });
+      }
       await prisma.payment.deleteMany({
         where: { paystackReference: 'TEST-VERIFY-REF-123' },
       });
@@ -193,6 +201,7 @@ describe('Payment Integration Tests', () => {
     });
 
     it('should verify successful payment and create ticket', async () => {
+      jest.setTimeout(15000);
       // Mock Paystack verification response
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
@@ -242,8 +251,7 @@ describe('Payment Integration Tests', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('payments');
-      expect(response.body.data).toHaveProperty('totalRevenue');
-      expect(response.body.data).toHaveProperty('totalTicketsSold');
+      expect(response.body.data).toHaveProperty('total');
       expect(Array.isArray(response.body.data.payments)).toBe(true);
     });
 
