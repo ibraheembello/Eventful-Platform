@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
-import { HiOutlinePhotograph, HiOutlineUpload, HiOutlineLink, HiX } from 'react-icons/hi';
+import type { EventImage } from '../types';
+import { HiOutlinePhotograph, HiOutlineUpload, HiOutlineLink, HiX, HiOutlineTrash, HiOutlinePlus } from 'react-icons/hi';
 
 const CATEGORIES = ['Music', 'Technology', 'Art', 'Entertainment', 'Sports', 'Education', 'Business', 'Food & Drink', 'Health', 'Other'];
 
@@ -33,6 +34,11 @@ export default function CreateEvent() {
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Gallery images (edit mode)
+  const [galleryImages, setGalleryImages] = useState<EventImage[]>([]);
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (isEdit) {
       api.get(`/events/${id}`).then((res) => {
@@ -54,6 +60,7 @@ export default function CreateEvent() {
           setImagePreview(existingUrl);
           setImageMode(existingUrl.startsWith('/uploads/') ? 'upload' : 'url');
         }
+        if (e.images?.length) setGalleryImages(e.images);
       });
     }
   }, [id, isEdit]);
@@ -113,6 +120,35 @@ export default function CreateEvent() {
       return data.data.imageUrl;
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleGalleryUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
+    setGalleryUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const uploadRes = await api.post('/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const url = uploadRes.data.data.imageUrl;
+      const imgRes = await api.post(`/events/${id}/images`, { url });
+      setGalleryImages((prev) => [...prev, imgRes.data.data]);
+      toast.success('Gallery image added');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to add gallery image');
+    } finally {
+      setGalleryUploading(false);
+    }
+  };
+
+  const handleRemoveGalleryImage = async (imageId: string) => {
+    try {
+      await api.delete(`/events/${id}/images/${imageId}`);
+      setGalleryImages((prev) => prev.filter((img) => img.id !== imageId));
+      toast.success('Image removed');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to remove image');
     }
   };
 
@@ -396,6 +432,67 @@ export default function CreateEvent() {
               </select>
             </div>
           </div>
+
+          {/* Gallery Images - Edit mode only */}
+          {isEdit && (
+            <div className="border-t border-[rgb(var(--border-primary))] pt-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium text-[rgb(var(--text-secondary))]">
+                  <HiOutlinePhotograph className="inline w-4 h-4 mr-1" />
+                  Gallery Images ({galleryImages.length})
+                </p>
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={galleryUploading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-600 text-white rounded-lg
+                    hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                >
+                  <HiOutlinePlus className="w-3.5 h-3.5" />
+                  {galleryUploading ? 'Uploading...' : 'Add Image'}
+                </button>
+                <input
+                  ref={galleryInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleGalleryUpload(file);
+                    if (galleryInputRef.current) galleryInputRef.current.value = '';
+                  }}
+                />
+              </div>
+
+              {galleryImages.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                  {galleryImages.map((img) => (
+                    <div key={img.id} className="relative group rounded-lg overflow-hidden h-24 bg-[rgb(var(--bg-tertiary))]">
+                      <img src={img.url} alt={img.caption || 'Gallery image'} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveGalleryImage(img.id)}
+                        className="absolute top-1.5 right-1.5 p-1 bg-black/60 rounded-full text-white
+                          opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-all"
+                        aria-label="Remove gallery image"
+                      >
+                        <HiOutlineTrash className="w-3.5 h-3.5" />
+                      </button>
+                      {img.caption && (
+                        <div className="absolute bottom-0 inset-x-0 bg-black/60 px-2 py-1">
+                          <p className="text-[10px] text-white truncate">{img.caption}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-[rgb(var(--text-tertiary))] italic">
+                  No gallery images yet. Add additional photos to showcase your event.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={() => navigate(-1)} className="flex-1 py-2.5 border border-[rgb(var(--border-primary))] rounded-lg text-[rgb(var(--text-primary))] font-medium hover:bg-[rgb(var(--bg-secondary))] transition">Cancel</button>

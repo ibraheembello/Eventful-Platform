@@ -115,6 +115,7 @@ export class EventService {
           select: { id: true, firstName: true, lastName: true, email: true },
         },
         _count: { select: { tickets: true } },
+        images: { orderBy: { order: 'asc' } },
       },
     });
 
@@ -552,6 +553,50 @@ export class EventService {
 
     await prisma.comment.delete({ where: { id: commentId } });
     return { deleted: true };
+  }
+
+  static async addEventImage(eventId: string, creatorId: string, url: string, caption?: string) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only add images to your own events');
+
+    const lastImage = await prisma.eventImage.findFirst({
+      where: { eventId },
+      orderBy: { order: 'desc' },
+    });
+    const order = (lastImage?.order ?? -1) + 1;
+
+    const image = await prisma.eventImage.create({
+      data: { eventId, url, caption, order },
+    });
+
+    await Cache.delPattern(`events:${eventId}`);
+    return image;
+  }
+
+  static async removeEventImage(imageId: string, eventId: string, creatorId: string) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only remove images from your own events');
+
+    const image = await prisma.eventImage.findFirst({
+      where: { id: imageId, eventId },
+    });
+    if (!image) throw ApiError.notFound('Image not found');
+
+    await prisma.eventImage.delete({ where: { id: imageId } });
+    await Cache.delPattern(`events:${eventId}`);
+    return { deleted: true };
+  }
+
+  static async getEventImages(eventId: string) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    return prisma.eventImage.findMany({
+      where: { eventId },
+      orderBy: { order: 'asc' },
+    });
   }
 
   static async getShareLinks(eventId: string): Promise<ShareLinks> {

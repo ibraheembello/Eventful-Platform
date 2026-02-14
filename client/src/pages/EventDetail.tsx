@@ -5,7 +5,7 @@ import type { Event, ShareLinks, Comment } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineShare, HiOutlinePencil, HiOutlineTrash, HiOutlineClock, HiOutlineTag, HiOutlineBookmark, HiBookmark, HiOutlineBell, HiOutlineStar, HiStar } from 'react-icons/hi';
+import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineShare, HiOutlinePencil, HiOutlineTrash, HiOutlineClock, HiOutlineTag, HiOutlineBookmark, HiBookmark, HiOutlineBell, HiOutlineStar, HiStar, HiOutlinePhotograph, HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineX } from 'react-icons/hi';
 import { FaTwitter, FaFacebook, FaLinkedin, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
 
 export default function EventDetail() {
@@ -30,6 +30,8 @@ export default function EventDetail() {
   const [hoverRating, setHoverRating] = useState(0);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [hasTicket, setHasTicket] = useState(false);
+  const [activeImage, setActiveImage] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   useEffect(() => {
     api.get(`/events/${id}`)
@@ -196,18 +198,28 @@ export default function EventDetail() {
   const isPast = new Date(event.date) < new Date();
   const canReview = isPast && hasTicket && !isCreator && !comments.some((c) => c.userId === user?.id);
 
+  // Build gallery: main image + additional gallery images
+  const galleryImages: { url: string; caption?: string }[] = [];
+  if (event.imageUrl) galleryImages.push({ url: event.imageUrl, caption: 'Cover image' });
+  if (event.images?.length) {
+    event.images.forEach((img) => galleryImages.push({ url: img.url, caption: img.caption || undefined }));
+  }
+  const hasGallery = galleryImages.length > 1;
+
   return (
     <div className="max-w-6xl mx-auto">
       {/* Desktop: Two-column layout, Mobile: Single column */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column - Event Image & Quick Info */}
         <div className="lg:col-span-1 space-y-6">
-          {/* Event Cover */}
-          <div className="relative overflow-hidden rounded-2xl h-64 lg:h-80 group">
-            {event.imageUrl ? (
+          {/* Event Cover / Gallery */}
+          <div className="relative overflow-hidden rounded-2xl h-64 lg:h-80 group cursor-pointer"
+            onClick={() => galleryImages.length > 0 && setLightboxOpen(true)}
+          >
+            {galleryImages.length > 0 ? (
               <img
-                src={event.imageUrl}
-                alt={event.title}
+                src={galleryImages[activeImage]?.url}
+                alt={galleryImages[activeImage]?.caption || event.title}
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
@@ -219,8 +231,35 @@ export default function EventDetail() {
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
+            {/* Gallery Nav Arrows */}
+            {hasGallery && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setActiveImage((prev) => (prev - 1 + galleryImages.length) % galleryImages.length); }}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 glass-light p-2 rounded-full hover:bg-white/30 transition-all z-10"
+                  aria-label="Previous image"
+                >
+                  <HiOutlineChevronLeft className="w-5 h-5 text-white" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setActiveImage((prev) => (prev + 1) % galleryImages.length); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 glass-light p-2 rounded-full hover:bg-white/30 transition-all z-10"
+                  aria-label="Next image"
+                >
+                  <HiOutlineChevronRight className="w-5 h-5 text-white" />
+                </button>
+                {/* Image Counter */}
+                <div className="absolute bottom-4 right-4 glass-light px-3 py-1.5 rounded-full flex items-center gap-1.5 z-10">
+                  <HiOutlinePhotograph className="w-4 h-4 text-white" />
+                  <span className="text-xs font-medium text-white">{activeImage + 1} / {galleryImages.length}</span>
+                </div>
+              </>
+            )}
+
             {/* Action Buttons Overlay */}
-            <div className="absolute top-4 right-4 flex gap-2">
+            <div className="absolute top-4 right-4 flex gap-2 z-10" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
                 onClick={handleBookmark}
@@ -272,7 +311,7 @@ export default function EventDetail() {
 
             {/* Category Badge */}
             {event.category && (
-              <div className="absolute bottom-4 left-4">
+              <div className="absolute bottom-4 left-4 z-10">
                 <div className="glass-light px-3 py-1.5 rounded-full flex items-center gap-1.5">
                   <HiOutlineTag className="w-4 h-4 text-white" />
                   <span className="text-sm font-medium text-white">{event.category}</span>
@@ -280,6 +319,71 @@ export default function EventDetail() {
               </div>
             )}
           </div>
+
+          {/* Thumbnail Strip */}
+          {hasGallery && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {galleryImages.map((img, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setActiveImage(idx)}
+                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                    idx === activeImage
+                      ? 'border-emerald-500 ring-2 ring-emerald-500/30'
+                      : 'border-transparent opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img.url} alt={img.caption || `Image ${idx + 1}`} className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Lightbox */}
+          {lightboxOpen && galleryImages.length > 0 && (
+            <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center" onClick={() => setLightboxOpen(false)}>
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(false)}
+                className="absolute top-4 right-4 p-2 text-white/80 hover:text-white transition-colors z-50"
+                aria-label="Close lightbox"
+              >
+                <HiOutlineX className="w-8 h-8" />
+              </button>
+              {hasGallery && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveImage((prev) => (prev - 1 + galleryImages.length) % galleryImages.length); }}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-3 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-all z-50"
+                    aria-label="Previous image"
+                  >
+                    <HiOutlineChevronLeft className="w-8 h-8" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setActiveImage((prev) => (prev + 1) % galleryImages.length); }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-3 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full transition-all z-50"
+                    aria-label="Next image"
+                  >
+                    <HiOutlineChevronRight className="w-8 h-8" />
+                  </button>
+                </>
+              )}
+              <div className="max-w-5xl max-h-[85vh] px-4" onClick={(e) => e.stopPropagation()}>
+                <img
+                  src={galleryImages[activeImage]?.url}
+                  alt={galleryImages[activeImage]?.caption || event.title}
+                  className="max-w-full max-h-[80vh] object-contain mx-auto rounded-lg"
+                />
+                {galleryImages[activeImage]?.caption && (
+                  <p className="text-center text-white/80 text-sm mt-3">{galleryImages[activeImage].caption}</p>
+                )}
+                <p className="text-center text-white/50 text-xs mt-1">{activeImage + 1} of {galleryImages.length}</p>
+              </div>
+            </div>
+          )}
 
           {/* Share Modal */}
           {showShare && shareLinks && (
