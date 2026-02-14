@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { EventController } from './event.controller';
 import { validate } from '../../middleware/validate';
-import { createEventSchema, updateEventSchema } from './event.schema';
+import { createEventSchema, updateEventSchema, createCommentSchema } from './event.schema';
 import { authenticate } from '../../middleware/auth';
 import { authorize } from '../../middleware/authorize';
 
@@ -365,6 +365,103 @@ router.get('/:id/share', EventController.getShareLinks);
  *         description: Forbidden
  */
 router.post('/:id/check-in', authenticate, authorize('CREATOR'), EventController.manualCheckIn);
+
+/**
+ * @swagger
+ * /events/{id}/comments:
+ *   get:
+ *     summary: Get comments/reviews for an event (public)
+ *     tags: [Events]
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of comments with average rating
+ */
+router.get('/:id/comments', EventController.getComments);
+
+/**
+ * @swagger
+ * /events/{id}/comments:
+ *   post:
+ *     summary: Add a review to a past event (requires ticket)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [content, rating]
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 minLength: 10
+ *               rating:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *     responses:
+ *       201:
+ *         description: Review submitted
+ *       400:
+ *         description: Event not past or already reviewed
+ *       403:
+ *         description: No ticket for this event
+ */
+router.post('/:id/comments', authenticate, validate(createCommentSchema), EventController.createComment);
+
+/**
+ * @swagger
+ * /events/{id}/comments/{commentId}:
+ *   delete:
+ *     summary: Delete a review (author or event creator)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Review deleted
+ *       403:
+ *         description: Not authorized
+ */
+router.delete('/:id/comments/:commentId', authenticate, EventController.deleteComment);
 
 /**
  * @swagger

@@ -87,6 +87,16 @@ export interface Bookmark {
   createdAt: string;
 }
 
+export interface Comment {
+  id: string;
+  content: string;
+  rating: number;
+  userId: string;
+  eventId: string;
+  user: { id: string; firstName: string; lastName: string; profileImage?: string };
+  createdAt: string;
+}
+
 export interface WaitlistEntry {
   id: string;
   position: number;

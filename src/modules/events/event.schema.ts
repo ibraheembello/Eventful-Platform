@@ -31,5 +31,11 @@ export const updateEventSchema = z.object({
   defaultReminderUnit: z.enum(['MINUTES', 'HOURS', 'DAYS', 'WEEKS']).optional().nullable(),
 });
 
+export const createCommentSchema = z.object({
+  content: z.string().min(10, 'Review must be at least 10 characters'),
+  rating: z.number().int().min(1, 'Rating must be 1-5').max(5, 'Rating must be 1-5'),
+});
+
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 export type UpdateEventInput = z.infer<typeof updateEventSchema>;
+export type CreateCommentInput = z.infer<typeof createCommentSchema>;

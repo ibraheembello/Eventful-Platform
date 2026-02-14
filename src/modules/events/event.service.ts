@@ -1,7 +1,7 @@
 import prisma from '../../config/database';
 import { ApiError } from '../../utils/apiError';
 import { Cache } from '../../utils/cache';
-import { CreateEventInput, UpdateEventInput } from './event.schema';
+import { CreateEventInput, UpdateEventInput, CreateCommentInput } from './event.schema';
 import { generateShareLinks, ShareLinks } from '../../utils/shareLink';
 
 export class EventService {
@@ -474,6 +474,84 @@ export class EventService {
     ]);
 
     return { entries, total, page, limit };
+  }
+
+  static async createComment(userId: string, eventId: string, input: CreateCommentInput) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    // Event must be in the past
+    if (new Date(event.date) > new Date()) {
+      throw ApiError.badRequest('You can only review events that have already happened');
+    }
+
+    // User must have a ticket for this event
+    const ticket = await prisma.ticket.findFirst({
+      where: { userId, eventId },
+    });
+    if (!ticket) {
+      throw ApiError.forbidden('You must have a ticket to review this event');
+    }
+
+    // One review per user per event
+    const existing = await prisma.comment.findUnique({
+      where: { userId_eventId: { userId, eventId } },
+    });
+    if (existing) {
+      throw ApiError.badRequest('You have already reviewed this event');
+    }
+
+    const comment = await prisma.comment.create({
+      data: { userId, eventId, content: input.content, rating: input.rating },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, profileImage: true } },
+      },
+    });
+
+    return comment;
+  }
+
+  static async getComments(eventId: string, page = 1, limit = 10) {
+    const [comments, total, avgResult] = await Promise.all([
+      prisma.comment.findMany({
+        where: { eventId },
+        include: {
+          user: { select: { id: true, firstName: true, lastName: true, profileImage: true } },
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.comment.count({ where: { eventId } }),
+      prisma.comment.aggregate({
+        where: { eventId },
+        _avg: { rating: true },
+      }),
+    ]);
+
+    return {
+      comments,
+      total,
+      page,
+      limit,
+      averageRating: avgResult._avg.rating || 0,
+    };
+  }
+
+  static async deleteComment(commentId: string, eventId: string, userId: string) {
+    const comment = await prisma.comment.findFirst({
+      where: { id: commentId, eventId },
+    });
+    if (!comment) throw ApiError.notFound('Comment not found');
+
+    // Only the author or the event creator can delete
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (comment.userId !== userId && event?.creatorId !== userId) {
+      throw ApiError.forbidden('You can only delete your own reviews');
+    }
+
+    await prisma.comment.delete({ where: { id: commentId } });
+    return { deleted: true };
   }
 
   static async getShareLinks(eventId: string): Promise<ShareLinks> {
