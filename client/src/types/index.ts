@@ -87,6 +87,15 @@ export interface Bookmark {
   createdAt: string;
 }
 
+export interface WaitlistEntry {
+  id: string;
+  position: number;
+  notified: boolean;
+  eventId: string;
+  event: Event;
+  createdAt: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message?: string;

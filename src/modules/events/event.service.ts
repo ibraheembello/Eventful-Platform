@@ -384,6 +384,98 @@ export class EventService {
     return bookmarks.map((b) => b.eventId);
   }
 
+  static async joinWaitlist(userId: string, eventId: string) {
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: { _count: { select: { tickets: true } } },
+    });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    const ticketsSold = event._count.tickets;
+    if (ticketsSold < event.capacity) {
+      throw ApiError.badRequest('Event is not sold out — you can still buy a ticket');
+    }
+
+    const existing = await prisma.waitlist.findUnique({
+      where: { userId_eventId: { userId, eventId } },
+    });
+    if (existing) {
+      throw ApiError.badRequest('You are already on the waitlist');
+    }
+
+    // Get the next position
+    const lastEntry = await prisma.waitlist.findFirst({
+      where: { eventId },
+      orderBy: { position: 'desc' },
+    });
+    const position = (lastEntry?.position || 0) + 1;
+
+    const entry = await prisma.waitlist.create({
+      data: { userId, eventId, position },
+    });
+
+    return { ...entry, totalAhead: position - 1 };
+  }
+
+  static async leaveWaitlist(userId: string, eventId: string) {
+    const existing = await prisma.waitlist.findUnique({
+      where: { userId_eventId: { userId, eventId } },
+    });
+    if (!existing) {
+      throw ApiError.notFound('You are not on the waitlist');
+    }
+
+    await prisma.waitlist.delete({ where: { id: existing.id } });
+
+    // Re-order positions for remaining entries
+    const remaining = await prisma.waitlist.findMany({
+      where: { eventId },
+      orderBy: { position: 'asc' },
+    });
+    await Promise.all(
+      remaining.map((entry, index) =>
+        prisma.waitlist.update({
+          where: { id: entry.id },
+          data: { position: index + 1 },
+        })
+      )
+    );
+
+    return { removed: true };
+  }
+
+  static async getWaitlistStatus(userId: string, eventId: string) {
+    const entry = await prisma.waitlist.findUnique({
+      where: { userId_eventId: { userId, eventId } },
+    });
+    if (!entry) return { onWaitlist: false, position: null, total: 0 };
+
+    const total = await prisma.waitlist.count({ where: { eventId } });
+    return { onWaitlist: true, position: entry.position, total };
+  }
+
+  static async getUserWaitlists(userId: string, page = 1, limit = 10) {
+    const [entries, total] = await Promise.all([
+      prisma.waitlist.findMany({
+        where: { userId },
+        include: {
+          event: {
+            include: {
+              creator: { select: { id: true, firstName: true, lastName: true } },
+              _count: { select: { tickets: true } },
+            },
+          },
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.waitlist.count({ where: { userId } }),
+    ]);
+
+    return { entries, total, page, limit };
+  }
+
   static async getShareLinks(eventId: string): Promise<ShareLinks> {
     const event = await prisma.event.findUnique({ where: { id: eventId } });
 

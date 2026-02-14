@@ -47,6 +47,7 @@ model User {
   payments      Payment[]
   notifications Notification[]
   bookmarks     Bookmark[]
+  waitlists     Waitlist[]
 
   @@map("users")
 }
@@ -73,6 +74,7 @@ model Event {
   payments            Payment[]
   notifications       Notification[]
   bookmarks           Bookmark[]
+  waitlists           Waitlist[]
 
   @@map("events")
 }
@@ -151,4 +153,21 @@ model Bookmark {
 
   @@unique([userId, eventId])
   @@map("bookmarks")
+}
+
+model Waitlist {
+  id        String   @id @default(uuid())
+  position  Int
+  notified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@map("waitlists")
 }

@@ -137,6 +137,29 @@ router.get('/bookmarks/ids', authenticate, EventController.getBookmarkIds);
 
 /**
  * @swagger
+ * /events/waitlists:
+ *   get:
+ *     summary: Get current user's waitlist entries
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of waitlist entries
+ */
+router.get('/waitlists', authenticate, EventController.getUserWaitlists);
+
+/**
+ * @swagger
  * /events/my-events:
  *   get:
  *     summary: Get events created by the authenticated creator
@@ -342,6 +365,73 @@ router.get('/:id/share', EventController.getShareLinks);
  *         description: Forbidden
  */
 router.post('/:id/check-in', authenticate, authorize('CREATOR'), EventController.manualCheckIn);
+
+/**
+ * @swagger
+ * /events/{id}/waitlist:
+ *   get:
+ *     summary: Get waitlist status for the current user on an event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Waitlist status
+ */
+router.get('/:id/waitlist', authenticate, EventController.getWaitlistStatus);
+
+/**
+ * @swagger
+ * /events/{id}/waitlist:
+ *   post:
+ *     summary: Join the waitlist for a sold-out event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Added to waitlist
+ *       400:
+ *         description: Event not sold out or already on waitlist
+ */
+router.post('/:id/waitlist', authenticate, EventController.joinWaitlist);
+
+/**
+ * @swagger
+ * /events/{id}/waitlist:
+ *   delete:
+ *     summary: Leave the waitlist for an event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Removed from waitlist
+ *       404:
+ *         description: Not on waitlist
+ */
+router.delete('/:id/waitlist', authenticate, EventController.leaveWaitlist);
 
 /**
  * @swagger
