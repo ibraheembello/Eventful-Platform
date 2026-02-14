@@ -1,6 +1,7 @@
 import prisma from '../../config/database';
 import { ApiError } from '../../utils/apiError';
 import { Cache } from '../../utils/cache';
+import { EmailService } from '../../utils/emailService';
 import { CreateEventInput, UpdateEventInput, CreateCommentInput } from './event.schema';
 import { generateShareLinks, ShareLinks } from '../../utils/shareLink';
 
@@ -296,6 +297,26 @@ export class EventService {
       throw ApiError.forbidden('You can only update your own events');
     }
 
+    // Detect meaningful changes for attendee notifications
+    const changes: string[] = [];
+    if (input.title && input.title !== event.title) {
+      changes.push(`Title changed from "${event.title}" to "${input.title}"`);
+    }
+    if (input.date) {
+      const newDate = new Date(input.date);
+      if (newDate.getTime() !== event.date.getTime()) {
+        const fmt = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+        changes.push(`Date changed from ${fmt(event.date)} to ${fmt(newDate)}`);
+      }
+    }
+    if (input.location && input.location !== event.location) {
+      changes.push(`Location changed from "${event.location}" to "${input.location}"`);
+    }
+    if (input.price !== undefined && input.price !== event.price) {
+      const fmtPrice = (p: number) => p > 0 ? `NGN ${p.toLocaleString()}` : 'Free';
+      changes.push(`Price changed from ${fmtPrice(event.price)} to ${fmtPrice(input.price)}`);
+    }
+
     const updateData: any = { ...input };
     if (input.date) {
       updateData.date = new Date(input.date);
@@ -313,7 +334,32 @@ export class EventService {
 
     await Cache.delPattern('events:*');
 
+    // Notify attendees if meaningful fields changed (fire and forget)
+    if (changes.length > 0) {
+      this.notifyAttendees(id, updated, changes).catch(() => {});
+    }
+
     return updated;
+  }
+
+  private static async notifyAttendees(
+    eventId: string,
+    event: { title: string; date: Date; location: string; id: string },
+    changes: string[],
+  ) {
+    const tickets = await prisma.ticket.findMany({
+      where: { eventId, status: 'ACTIVE' },
+      select: { user: { select: { email: true, firstName: true } } },
+    });
+
+    for (const ticket of tickets) {
+      EmailService.sendEventUpdate(
+        ticket.user.email,
+        ticket.user.firstName,
+        event,
+        changes,
+      ).catch(() => {});
+    }
   }
 
   static async delete(id: string, creatorId: string) {
