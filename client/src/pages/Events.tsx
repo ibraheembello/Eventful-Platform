@@ -1,37 +1,87 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 import type { Event } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
-import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineCurrencyDollar, HiOutlineSearch, HiOutlinePlus, HiOutlineTag } from 'react-icons/hi';
+import {
+  HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers,
+  HiOutlineCurrencyDollar, HiOutlineSearch, HiOutlinePlus, HiOutlineTag,
+  HiOutlineFilter, HiOutlineX,
+} from 'react-icons/hi';
 
 export default function Events() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [totalEvents, setTotalEvents] = useState(0);
   const limit = 12;
 
+  // Read filters from URL
+  const page = parseInt(searchParams.get('page') || '1');
+  const search = searchParams.get('search') || '';
+  const category = searchParams.get('category') || '';
+  const dateFrom = searchParams.get('dateFrom') || '';
+  const dateTo = searchParams.get('dateTo') || '';
+  const priceMin = searchParams.get('priceMin') || '';
+  const priceMax = searchParams.get('priceMax') || '';
+
+  const hasFilters = category || dateFrom || dateTo || priceMin || priceMax;
+
+  const updateParam = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    if (key !== 'page') params.set('page', '1');
+    setSearchParams(params);
+  };
+
+  const clearFilters = () => {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    setSearchParams(params);
+  };
+
+  // Fetch categories on mount
+  useEffect(() => {
+    api.get('/events/categories')
+      .then((res) => setCategories(res.data.data || []))
+      .catch(() => {});
+  }, []);
+
+  // Fetch events when filters change
   useEffect(() => {
     setLoading(true);
-    api.get('/events', { params: { page, limit, search: search || undefined } })
+    const params: Record<string, string | number> = { page, limit };
+    if (search) params.search = search;
+    if (category) params.category = category;
+    if (dateFrom) params.dateFrom = dateFrom;
+    if (dateTo) params.dateTo = dateTo;
+    if (priceMin) params.priceMin = priceMin;
+    if (priceMax) params.priceMax = priceMax;
+
+    api.get('/events', { params })
       .then((res) => {
         setEvents(res.data.data);
-        setTotalPages(res.data.pagination?.totalPages || res.data.pagination?.pages || 1);
+        setTotalPages(res.data.pagination?.totalPages || 1);
         setTotalEvents(res.data.pagination?.total || 0);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [page, search]);
+  }, [page, search, category, dateFrom, dateTo, priceMin, priceMax]);
 
   return (
     <div>
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-6">
         <div>
           <h1 className="text-3xl lg:text-4xl font-bold text-[rgb(var(--text-primary))] mb-2">
             Discover Events
@@ -46,12 +96,29 @@ export default function Events() {
               type="text"
               placeholder="Search events..."
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              onChange={(e) => updateParam('search', e.target.value)}
               className="pl-10 pr-4 py-2.5 border border-[rgb(var(--border-primary))] rounded-xl text-sm
                 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none w-full sm:w-64
                 bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] transition-all"
             />
           </div>
+
+          {/* Filter Toggle */}
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(!filtersOpen)}
+            className={`flex items-center gap-2 px-4 py-2.5 border rounded-xl text-sm font-medium transition-all ${
+              hasFilters
+                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                : 'border-[rgb(var(--border-primary))] text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-tertiary))]'
+            }`}
+          >
+            <HiOutlineFilter className="w-4 h-4" />
+            <span className="hidden sm:inline">Filters</span>
+            {hasFilters && (
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            )}
+          </button>
 
           {/* Create Event Button - Creators Only */}
           {user?.role === 'CREATOR' && (
@@ -67,6 +134,203 @@ export default function Events() {
           )}
         </div>
       </div>
+
+      {/* Filter Bar */}
+      {filtersOpen && (
+        <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-[rgb(var(--text-primary))]">Filter Events</h3>
+            <div className="flex items-center gap-2">
+              {hasFilters && (
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  className="text-xs text-red-500 hover:text-red-600 font-medium"
+                >
+                  Clear all
+                </button>
+              )}
+              <button type="button" onClick={() => setFiltersOpen(false)} aria-label="Close filters">
+                <HiOutlineX className="w-4 h-4 text-[rgb(var(--text-tertiary))]" />
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Category */}
+            <div>
+              <label htmlFor="filterCategory" className="block text-xs font-medium text-[rgb(var(--text-secondary))] mb-1">Category</label>
+              <select
+                id="filterCategory"
+                value={category}
+                onChange={(e) => updateParam('category', e.target.value)}
+                className="w-full px-3 py-2 border border-[rgb(var(--border-primary))] rounded-lg text-sm
+                  bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] outline-none
+                  focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              >
+                <option value="">All Categories</option>
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date From */}
+            <div>
+              <label htmlFor="filterDateFrom" className="block text-xs font-medium text-[rgb(var(--text-secondary))] mb-1">From Date</label>
+              <input
+                id="filterDateFrom"
+                type="date"
+                value={dateFrom}
+                onChange={(e) => updateParam('dateFrom', e.target.value)}
+                className="w-full px-3 py-2 border border-[rgb(var(--border-primary))] rounded-lg text-sm
+                  bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] outline-none
+                  focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+
+            {/* Date To */}
+            <div>
+              <label htmlFor="filterDateTo" className="block text-xs font-medium text-[rgb(var(--text-secondary))] mb-1">To Date</label>
+              <input
+                id="filterDateTo"
+                type="date"
+                value={dateTo}
+                onChange={(e) => updateParam('dateTo', e.target.value)}
+                className="w-full px-3 py-2 border border-[rgb(var(--border-primary))] rounded-lg text-sm
+                  bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] outline-none
+                  focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+
+            {/* Price Range */}
+            <div>
+              <label className="block text-xs font-medium text-[rgb(var(--text-secondary))] mb-1">Price Range</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Min"
+                  value={priceMin}
+                  onChange={(e) => updateParam('priceMin', e.target.value)}
+                  aria-label="Minimum price"
+                  className="w-full px-3 py-2 border border-[rgb(var(--border-primary))] rounded-lg text-sm
+                    bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] outline-none
+                    focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                />
+                <span className="text-[rgb(var(--text-tertiary))] text-xs">&ndash;</span>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Max"
+                  value={priceMax}
+                  onChange={(e) => updateParam('priceMax', e.target.value)}
+                  aria-label="Maximum price"
+                  className="w-full px-3 py-2 border border-[rgb(var(--border-primary))] rounded-lg text-sm
+                    bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] outline-none
+                    focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Filters */}
+          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-[rgb(var(--border-primary))]">
+            <button
+              type="button"
+              onClick={() => {
+                updateParam('priceMin', '');
+                updateParam('priceMax', '0');
+              }}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                priceMax === '0'
+                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                  : 'border-[rgb(var(--border-primary))] text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-tertiary))]'
+              }`}
+            >
+              Free Events
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                updateParam('priceMin', '1');
+                updateParam('priceMax', '');
+              }}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                priceMin === '1' && !priceMax
+                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                  : 'border-[rgb(var(--border-primary))] text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-tertiary))]'
+              }`}
+            >
+              Paid Events
+            </button>
+            <button
+              type="button"
+              onClick={() => updateParam('dateFrom', new Date().toISOString().split('T')[0])}
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                dateFrom === new Date().toISOString().split('T')[0]
+                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                  : 'border-[rgb(var(--border-primary))] text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-tertiary))]'
+              }`}
+            >
+              Upcoming Only
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Active Filter Tags */}
+      {hasFilters && !filtersOpen && (
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <span className="text-xs text-[rgb(var(--text-tertiary))]">Filters:</span>
+          {category && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium">
+              {category}
+              <button type="button" onClick={() => updateParam('category', '')} aria-label="Remove category filter">
+                <HiOutlineX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {dateFrom && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium">
+              From: {dateFrom}
+              <button type="button" onClick={() => updateParam('dateFrom', '')} aria-label="Remove from date filter">
+                <HiOutlineX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {dateTo && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium">
+              To: {dateTo}
+              <button type="button" onClick={() => updateParam('dateTo', '')} aria-label="Remove to date filter">
+                <HiOutlineX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {priceMin && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium">
+              Min: ${priceMin}
+              <button type="button" onClick={() => updateParam('priceMin', '')} aria-label="Remove min price filter">
+                <HiOutlineX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {priceMax && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium">
+              Max: ${priceMax}
+              <button type="button" onClick={() => updateParam('priceMax', '')} aria-label="Remove max price filter">
+                <HiOutlineX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-xs text-red-500 hover:text-red-600 font-medium ml-1"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
 
       {/* Loading Skeleton */}
       {loading ? (
@@ -91,14 +355,14 @@ export default function Events() {
             <HiOutlineCalendar className="w-8 h-8 text-[rgb(var(--text-tertiary))]" />
           </div>
           <h3 className="text-lg font-semibold text-[rgb(var(--text-primary))] mb-2">No events found</h3>
-          <p className="text-[rgb(var(--text-secondary))] mb-4">Try adjusting your search or check back later.</p>
-          {search && (
+          <p className="text-[rgb(var(--text-secondary))] mb-4">Try adjusting your search or filters.</p>
+          {(search || hasFilters) && (
             <button
               type="button"
-              onClick={() => setSearch('')}
+              onClick={() => { clearFilters(); }}
               className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
             >
-              Clear search
+              Clear all filters
             </button>
           )}
         </div>
@@ -232,7 +496,7 @@ export default function Events() {
             <div className="flex justify-center gap-2 mt-12">
               <button
                 type="button"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
+                onClick={() => updateParam('page', String(Math.max(1, page - 1)))}
                 disabled={page === 1}
                 className="px-5 py-2.5 text-sm border border-[rgb(var(--border-primary))] rounded-lg
                   hover:bg-[rgb(var(--bg-tertiary))] disabled:opacity-50 disabled:cursor-not-allowed
@@ -257,7 +521,7 @@ export default function Events() {
                     <button
                       key={pageNum}
                       type="button"
-                      onClick={() => setPage(pageNum)}
+                      onClick={() => updateParam('page', String(pageNum))}
                       className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${
                         page === pageNum
                           ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
@@ -271,7 +535,7 @@ export default function Events() {
               </div>
               <button
                 type="button"
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                onClick={() => updateParam('page', String(Math.min(totalPages, page + 1)))}
                 disabled={page === totalPages}
                 className="px-5 py-2.5 text-sm border border-[rgb(var(--border-primary))] rounded-lg
                   hover:bg-[rgb(var(--bg-tertiary))] disabled:opacity-50 disabled:cursor-not-allowed

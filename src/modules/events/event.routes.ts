@@ -35,6 +35,28 @@ const router = Router();
  *         schema:
  *           type: string
  *         description: Filter by category
+ *       - in: query
+ *         name: dateFrom
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter events from this date
+ *       - in: query
+ *         name: dateTo
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter events up to this date
+ *       - in: query
+ *         name: priceMin
+ *         schema:
+ *           type: number
+ *         description: Minimum price filter
+ *       - in: query
+ *         name: priceMax
+ *         schema:
+ *           type: number
+ *         description: Maximum price filter
  *     responses:
  *       200:
  *         description: List of events
@@ -62,6 +84,19 @@ const router = Router();
  *                       type: integer
  */
 router.get('/', EventController.getAll);
+
+/**
+ * @swagger
+ * /events/categories:
+ *   get:
+ *     summary: Get all event categories
+ *     tags: [Events]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: List of categories
+ */
+router.get('/categories', EventController.getCategories);
 
 /**
  * @swagger
