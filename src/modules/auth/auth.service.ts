@@ -4,6 +4,7 @@ import prisma from '../../config/database';
 import { ApiError } from '../../utils/apiError';
 import { RegisterInput, LoginInput, UpdateProfileInput } from './auth.schema';
 import { AuthPayload } from '../../middleware/auth';
+import { EmailService } from '../../utils/emailService';
 
 export class AuthService {
   static async register(input: RegisterInput) {
@@ -41,6 +42,9 @@ export class AuthService {
       email: user.email,
       role: user.role,
     });
+
+    // Send welcome email (fire and forget)
+    EmailService.sendWelcome(user.email, user.firstName).catch(() => {});
 
     return { user, ...tokens };
   }

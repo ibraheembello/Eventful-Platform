@@ -5,6 +5,7 @@ import { ApiError } from '../../utils/apiError';
 import { Cache } from '../../utils/cache';
 import { TicketService } from '../tickets/ticket.service';
 import { NotificationService } from '../notifications/notification.service';
+import { EmailService } from '../../utils/emailService';
 
 export class PaymentService {
   static async initializePayment(userId: string, eventId: string) {
@@ -134,8 +135,8 @@ export class PaymentService {
     );
 
     // Auto-create default reminder if event has one
+    const event = await prisma.event.findUnique({ where: { id: payment.eventId } });
     try {
-      const event = await prisma.event.findUnique({ where: { id: payment.eventId } });
       if (event && event.defaultReminderValue && event.defaultReminderUnit) {
         await NotificationService.createReminder(
           payment.userId,
@@ -146,6 +147,14 @@ export class PaymentService {
       }
     } catch {
       // Don't fail if reminder creation fails
+    }
+
+    // Send ticket confirmation email (fire and forget)
+    if (event) {
+      const user = await prisma.user.findUnique({ where: { id: payment.userId }, select: { email: true, firstName: true } });
+      if (user) {
+        EmailService.sendTicketConfirmation(user.email, user.firstName, event, updatedPayment.amount).catch(() => {});
+      }
     }
 
     await Cache.delPattern('analytics:*');
