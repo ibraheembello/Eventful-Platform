@@ -5,7 +5,7 @@ import type { Event, ShareLinks } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineShare, HiOutlinePencil, HiOutlineTrash, HiOutlineClock, HiOutlineTag, HiOutlineBookmark, HiBookmark } from 'react-icons/hi';
+import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineShare, HiOutlinePencil, HiOutlineTrash, HiOutlineClock, HiOutlineTag, HiOutlineBookmark, HiBookmark, HiOutlineBell } from 'react-icons/hi';
 import { FaTwitter, FaFacebook, FaLinkedin, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
 
 export default function EventDetail() {
@@ -18,6 +18,8 @@ export default function EventDetail() {
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  const [waitlistStatus, setWaitlistStatus] = useState<{ onWaitlist: boolean; position: number | null; total: number }>({ onWaitlist: false, position: null, total: 0 });
+  const [joiningWaitlist, setJoiningWaitlist] = useState(false);
 
   useEffect(() => {
     api.get(`/events/${id}`)
@@ -30,6 +32,9 @@ export default function EventDetail() {
           const ids: string[] = res.data.data || [];
           setBookmarked(ids.includes(id!));
         })
+        .catch(() => {});
+      api.get(`/events/${id}/waitlist`)
+        .then((res) => setWaitlistStatus(res.data.data))
         .catch(() => {});
     }
   }, [id, user]);
@@ -67,6 +72,30 @@ export default function EventDetail() {
     } catch {
       setBookmarked(was);
       toast.error('Failed to update bookmark');
+    }
+  };
+
+  const handleJoinWaitlist = async () => {
+    if (!user) { navigate('/login'); return; }
+    setJoiningWaitlist(true);
+    try {
+      const res = await api.post(`/events/${id}/waitlist`);
+      setWaitlistStatus({ onWaitlist: true, position: res.data.data.position, total: (res.data.data.totalAhead || 0) + 1 });
+      toast.success('You\'ve been added to the waitlist!');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to join waitlist');
+    } finally {
+      setJoiningWaitlist(false);
+    }
+  };
+
+  const handleLeaveWaitlist = async () => {
+    try {
+      await api.delete(`/events/${id}/waitlist`);
+      setWaitlistStatus({ onWaitlist: false, position: null, total: 0 });
+      toast.success('Removed from waitlist');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to leave waitlist');
     }
   };
 
@@ -330,23 +359,63 @@ export default function EventDetail() {
                       'Free'
                     )}
                   </p>
-                  {availableTickets > 0 && availableTickets <= 10 && (
+                  {!soldOut && availableTickets > 0 && availableTickets <= 10 && (
                     <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
                       Only {availableTickets} tickets left!
                     </p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={handleBuyTicket}
-                  disabled={paying || soldOut}
-                  className="px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold
-                    hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed
-                    transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5
-                    disabled:transform-none"
-                >
-                  {soldOut ? 'Sold Out' : paying ? 'Processing...' : 'Get Ticket'}
-                </button>
+                {soldOut ? (
+                  waitlistStatus.onWaitlist ? (
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="text-right">
+                        <p className="text-sm font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1.5 justify-end">
+                          <HiOutlineBell className="w-4 h-4" />
+                          You're on the waitlist
+                        </p>
+                        <p className="text-xs text-[rgb(var(--text-secondary))] mt-0.5">
+                          Position #{waitlistStatus.position} of {waitlistStatus.total}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleLeaveWaitlist}
+                        className="px-6 py-2.5 border-2 border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-xl font-medium
+                          hover:bg-red-50 dark:hover:bg-red-950/30 transition-all duration-200 text-sm"
+                      >
+                        Leave Waitlist
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-end gap-2">
+                      <p className="text-sm text-[rgb(var(--text-secondary))]">Event is sold out</p>
+                      <button
+                        type="button"
+                        onClick={handleJoinWaitlist}
+                        disabled={joiningWaitlist}
+                        className="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold
+                          hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed
+                          transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5
+                          disabled:transform-none flex items-center gap-2"
+                      >
+                        <HiOutlineBell className="w-5 h-5" />
+                        {joiningWaitlist ? 'Joining...' : 'Join Waitlist'}
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleBuyTicket}
+                    disabled={paying}
+                    className="px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold
+                      hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed
+                      transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5
+                      disabled:transform-none"
+                  >
+                    {paying ? 'Processing...' : 'Get Ticket'}
+                  </button>
+                )}
               </div>
             </div>
           )}

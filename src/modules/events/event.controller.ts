@@ -171,6 +171,44 @@ export class EventController {
     }
   }
 
+  static async joinWaitlist(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await EventService.joinWaitlist(req.user!.userId, param(req, 'id'));
+      ApiResponse.success(res, result, 'Added to waitlist');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async leaveWaitlist(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await EventService.leaveWaitlist(req.user!.userId, param(req, 'id'));
+      ApiResponse.success(res, result, 'Removed from waitlist');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getWaitlistStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await EventService.getWaitlistStatus(req.user!.userId, param(req, 'id'));
+      ApiResponse.success(res, result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getUserWaitlists(req: Request, res: Response, next: NextFunction) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const result = await EventService.getUserWaitlists(req.user!.userId, page, limit);
+      ApiResponse.paginated(res, (result as any).entries, (result as any).total, page, limit);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getShareLinks(req: Request, res: Response, next: NextFunction) {
     try {
       const links = await EventService.getShareLinks(param(req, 'id'));
