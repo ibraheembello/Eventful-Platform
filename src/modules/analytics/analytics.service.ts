@@ -32,12 +32,26 @@ export class AnalyticsService {
         }),
       ]);
 
+    const [ticketsActive, ticketsCancelled] = await Promise.all([
+      prisma.ticket.count({
+        where: { eventId: { in: eventIds }, status: 'ACTIVE' },
+      }),
+      prisma.ticket.count({
+        where: { eventId: { in: eventIds }, status: 'CANCELLED' },
+      }),
+    ]);
+
     const result = {
       totalEvents: eventIds.length,
       totalAttendees,
       totalTicketsSold,
       totalTicketsScanned,
       totalRevenue: totalRevenue._sum.amount || 0,
+      ticketStatusBreakdown: {
+        active: ticketsActive,
+        used: totalAttendees,
+        cancelled: ticketsCancelled,
+      },
     };
 
     await Cache.set(cacheKey, result, 300);
