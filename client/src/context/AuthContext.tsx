@@ -8,6 +8,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (data: { email: string; password: string; firstName: string; lastName: string; role: string }) => Promise<void>;
   logout: () => void;
+  updateProfile: (data: { firstName?: string; lastName?: string; profileImage?: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -45,6 +46,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.data.user);
   };
 
+  const updateProfile = async (data: { firstName?: string; lastName?: string; profileImage?: string }) => {
+    const res = await api.put('/auth/profile', data);
+    setUser(res.data.data);
+  };
+
   const logout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
@@ -52,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

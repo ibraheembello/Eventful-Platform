@@ -4,6 +4,7 @@ export interface User {
   firstName: string;
   lastName: string;
   role: 'CREATOR' | 'EVENTEE';
+  profileImage?: string;
   createdAt: string;
 }
 

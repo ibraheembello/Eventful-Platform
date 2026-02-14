@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '../../config/database';
 import { ApiError } from '../../utils/apiError';
-import { RegisterInput, LoginInput } from './auth.schema';
+import { RegisterInput, LoginInput, UpdateProfileInput } from './auth.schema';
 import { AuthPayload } from '../../middleware/auth';
 
 export class AuthService {
@@ -31,6 +31,7 @@ export class AuthService {
         firstName: true,
         lastName: true,
         role: true,
+        profileImage: true,
         createdAt: true,
       },
     });
@@ -79,6 +80,7 @@ export class AuthService {
         firstName: true,
         lastName: true,
         role: true,
+        profileImage: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -87,6 +89,29 @@ export class AuthService {
     if (!user) {
       throw ApiError.notFound('User not found');
     }
+
+    return user;
+  }
+
+  static async updateProfile(userId: string, input: UpdateProfileInput) {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(input.firstName && { firstName: input.firstName }),
+        ...(input.lastName && { lastName: input.lastName }),
+        ...(input.profileImage !== undefined && { profileImage: input.profileImage }),
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        profileImage: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
 
     return user;
   }

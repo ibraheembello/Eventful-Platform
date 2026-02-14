@@ -1,9 +1,22 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { HiOutlineTicket, HiOutlineShieldCheck, HiOutlineChartBar, HiOutlineBell, HiOutlineQrcode, HiOutlineCurrencyDollar, HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
+import { useAuth } from '../context/AuthContext';
+import { HiOutlineTicket, HiOutlineShieldCheck, HiOutlineChartBar, HiOutlineBell, HiOutlineQrcode, HiOutlineCurrencyDollar, HiOutlineMoon, HiOutlineSun, HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineArrowRight } from 'react-icons/hi';
+import api from '../lib/api';
+import type { Event } from '../types';
+import { format } from 'date-fns';
 
 export default function LandingPage() {
   const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
+  const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
+
+  useEffect(() => {
+    api.get('/events', { params: { limit: 6 } })
+      .then((res) => setFeaturedEvents(res.data.data))
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-[rgb(var(--bg-primary))] transition-colors duration-200">
@@ -22,12 +35,31 @@ export default function LandingPage() {
             >
               {theme === 'light' ? <HiOutlineMoon className="w-5 h-5" /> : <HiOutlineSun className="w-5 h-5" />}
             </button>
-            <Link to="/login" className="text-sm font-medium text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-              Login
-            </Link>
-            <Link to="/register" className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
-              Get Started
-            </Link>
+            {user ? (
+              <>
+                <Link to="/events" className="text-sm font-medium text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                  Dashboard
+                </Link>
+                <Link to="/profile" className="flex items-center gap-2">
+                  {user.profileImage ? (
+                    <img src={user.profileImage} alt="" className="w-8 h-8 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs font-semibold">
+                      {user.firstName?.[0]}{user.lastName?.[0]}
+                    </div>
+                  )}
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="text-sm font-medium text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                  Login
+                </Link>
+                <Link to="/register" className="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -52,18 +84,29 @@ export default function LandingPage() {
               From concert halls to conference rooms, Eventful makes it easy to manage events, sell tickets with secure QR codes, and track everything in one place.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/register"
-                className="w-full sm:w-auto px-8 py-3.5 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                Start for Free
-              </Link>
-              <Link
-                to="/events"
-                className="w-full sm:w-auto px-8 py-3.5 border border-[rgb(var(--border-secondary))] text-[rgb(var(--text-primary))] font-semibold rounded-xl hover:bg-[rgb(var(--bg-secondary))] transition-all"
-              >
-                Browse Events
-              </Link>
+              {user ? (
+                <Link
+                  to="/events"
+                  className="w-full sm:w-auto px-8 py-3.5 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  Go to Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/register"
+                    className="w-full sm:w-auto px-8 py-3.5 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                    Start for Free
+                  </Link>
+                  <Link
+                    to="/events"
+                    className="w-full sm:w-auto px-8 py-3.5 border border-[rgb(var(--border-secondary))] text-[rgb(var(--text-primary))] font-semibold rounded-xl hover:bg-[rgb(var(--bg-secondary))] transition-all"
+                  >
+                    Browse Events
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -127,6 +170,86 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Featured Events */}
+      {featuredEvents.length > 0 && (
+        <section className="py-20 bg-[rgb(var(--bg-primary))]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl sm:text-4xl font-bold text-[rgb(var(--text-primary))] mb-4">
+                Featured Events
+              </h2>
+              <p className="text-[rgb(var(--text-secondary))] text-lg max-w-2xl mx-auto">
+                Discover upcoming events happening near you
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredEvents.map((event) => (
+                <Link
+                  key={event.id}
+                  to={`/events/${event.id}`}
+                  className="glass border border-[rgb(var(--border-primary))] rounded-2xl overflow-hidden group hover:shadow-lg transition-all duration-200"
+                >
+                  <div className="relative h-48 bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 overflow-hidden">
+                    {event.imageUrl ? (
+                      <img
+                        src={event.imageUrl}
+                        alt={event.title}
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-white text-6xl font-bold opacity-20">
+                          {event.title[0]}
+                        </span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                    {event.category && (
+                      <div className="absolute top-3 left-3">
+                        <div className="glass-light px-3 py-1 rounded-full">
+                          <span className="text-xs font-medium text-white">{event.category}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-5">
+                    <h3 className="font-semibold text-lg text-[rgb(var(--text-primary))] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-2 line-clamp-1">
+                      {event.title}
+                    </h3>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-[rgb(var(--text-secondary))]">
+                        <HiOutlineCalendar className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        <span>{format(new Date(event.date), 'MMM d, yyyy')}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-[rgb(var(--text-secondary))]">
+                        <HiOutlineLocationMarker className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                        <span className="truncate">{event.location}</span>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-[rgb(var(--border-primary))] flex items-center justify-between">
+                      <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                        {event.price > 0 ? `$${event.price.toLocaleString()}` : 'Free'}
+                      </span>
+                      <span className="text-xs text-[rgb(var(--text-tertiary))]">
+                        {event._count?.tickets || 0}/{event.capacity} spots
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <div className="text-center mt-10">
+              <Link
+                to="/events"
+                className="inline-flex items-center gap-2 px-6 py-3 border border-[rgb(var(--border-secondary))] text-[rgb(var(--text-primary))] font-semibold rounded-xl hover:bg-[rgb(var(--bg-secondary))] transition-all"
+              >
+                View All Events <HiOutlineArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* How It Works */}
       <section className="py-20 bg-[rgb(var(--bg-primary))]">

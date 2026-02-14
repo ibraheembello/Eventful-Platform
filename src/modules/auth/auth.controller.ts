@@ -30,6 +30,15 @@ export class AuthController {
     }
   }
 
+  static async updateProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = await AuthService.updateProfile(req.user!.userId, req.body);
+      ApiResponse.success(res, user, 'Profile updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async refreshToken(req: Request, res: Response, next: NextFunction) {
     try {
       const { refreshToken } = req.body;

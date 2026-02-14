@@ -13,13 +13,16 @@ export default function Events() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalEvents, setTotalEvents] = useState(0);
+  const limit = 12;
 
   useEffect(() => {
     setLoading(true);
-    api.get('/events', { params: { page, limit: 9, search: search || undefined } })
+    api.get('/events', { params: { page, limit, search: search || undefined } })
       .then((res) => {
         setEvents(res.data.data);
         setTotalPages(res.data.pagination?.pages || 1);
+        setTotalEvents(res.data.pagination?.total || 0);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -101,6 +104,11 @@ export default function Events() {
         </div>
       ) : (
         <>
+          {/* Results Count */}
+          <p className="text-sm text-[rgb(var(--text-secondary))] mb-4">
+            Showing {(page - 1) * limit + 1}&ndash;{Math.min(page * limit, totalEvents)} of {totalEvents} events
+          </p>
+
           {/* Events Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.map((event) => {
