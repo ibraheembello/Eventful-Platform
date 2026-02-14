@@ -209,6 +209,45 @@ export class EventController {
     }
   }
 
+  static async createComment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const comment = await EventService.createComment(req.user!.userId, param(req, 'id'), req.body);
+      ApiResponse.created(res, comment, 'Review submitted');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getComments(req: Request, res: Response, next: NextFunction) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const result = await EventService.getComments(param(req, 'id'), page, limit);
+      res.json({
+        success: true,
+        data: (result as any).comments,
+        averageRating: (result as any).averageRating,
+        pagination: {
+          page,
+          limit,
+          total: (result as any).total,
+          totalPages: Math.ceil((result as any).total / limit),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteComment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await EventService.deleteComment(param(req, 'commentId'), param(req, 'id'), req.user!.userId);
+      ApiResponse.success(res, result, 'Review deleted');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getShareLinks(req: Request, res: Response, next: NextFunction) {
     try {
       const links = await EventService.getShareLinks(param(req, 'id'));
