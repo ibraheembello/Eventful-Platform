@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { HiTicket, HiDownload, HiQrcode, HiCheckCircle, HiXCircle } from 'react-icons/hi';
 import { format } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
+import QRCode from 'qrcode';
+import { jsPDF } from 'jspdf';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import type { Ticket } from '../types';
@@ -26,7 +28,7 @@ export default function MyTickets() {
 
       if (response.data.success) {
         setTickets(response.data.data);
-        setTotalPages(response.data.pagination.pages);
+        setTotalPages(response.data.pagination.totalPages);
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to load tickets');
@@ -35,28 +37,118 @@ export default function MyTickets() {
     }
   };
 
-  const downloadTicket = (ticket: Ticket) => {
-    const ticketData = `
-EVENTFUL TICKET
-================
-Event: ${ticket.event.title}
-Date: ${format(new Date(ticket.event.date), 'PPP p')}
-Location: ${ticket.event.location}
-Ticket ID: ${ticket.id}
-Status: ${ticket.status}
-================
-    `.trim();
+  const downloadTicket = async (ticket: Ticket) => {
+    try {
+      const doc = new jsPDF({ unit: 'mm', format: [100, 200] });
+      const w = 100;
 
-    const blob = new Blob([ticketData], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ticket-${ticket.id}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success('Ticket downloaded!');
+      // Background
+      doc.setFillColor(255, 255, 255);
+      doc.rect(0, 0, w, 200, 'F');
+
+      // Header bar
+      doc.setFillColor(5, 150, 105); // emerald-600
+      doc.rect(0, 0, w, 28, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('EVENTFUL', w / 2, 12, { align: 'center' });
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text('E-TICKET', w / 2, 19, { align: 'center' });
+
+      // Status badge
+      const statusY = 24;
+      const statusColor = ticket.status === 'ACTIVE' ? [16, 185, 129] : ticket.status === 'USED' ? [156, 163, 175] : [239, 68, 68];
+      doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+      const statusText = ticket.status;
+      const statusWidth = doc.getTextWidth(statusText) + 8;
+      doc.roundedRect((w - statusWidth) / 2, statusY - 3, statusWidth, 6, 2, 2, 'F');
+      doc.setFontSize(7);
+      doc.setTextColor(255, 255, 255);
+      doc.text(statusText, w / 2, statusY + 1, { align: 'center' });
+
+      // Event title
+      doc.setTextColor(17, 24, 39);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      const titleLines = doc.splitTextToSize(ticket.event.title, w - 16);
+      doc.text(titleLines, w / 2, 38, { align: 'center' });
+      let yPos = 38 + titleLines.length * 6 + 4;
+
+      // Dashed separator
+      doc.setDrawColor(209, 213, 219);
+      doc.setLineDashPattern([2, 2], 0);
+      doc.line(8, yPos, w - 8, yPos);
+      doc.setLineDashPattern([], 0);
+      yPos += 6;
+
+      // Event details
+      const addDetail = (label: string, value: string) => {
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(107, 114, 128);
+        doc.text(label, 10, yPos);
+        yPos += 4;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(17, 24, 39);
+        const valLines = doc.splitTextToSize(value, w - 20);
+        doc.text(valLines, 10, yPos);
+        yPos += valLines.length * 4.5 + 4;
+      };
+
+      addDetail('DATE', format(new Date(ticket.event.date), 'EEEE, MMMM d, yyyy'));
+      addDetail('TIME', format(new Date(ticket.event.date), 'h:mm a'));
+      addDetail('LOCATION', ticket.event.location);
+
+      // Dashed separator
+      doc.setDrawColor(209, 213, 219);
+      doc.setLineDashPattern([2, 2], 0);
+      doc.line(8, yPos, w - 8, yPos);
+      doc.setLineDashPattern([], 0);
+      yPos += 6;
+
+      // QR Code
+      if (ticket.qrCodeData) {
+        const qrDataUrl = await QRCode.toDataURL(ticket.qrCodeData, {
+          width: 200,
+          margin: 1,
+          errorCorrectionLevel: 'H',
+        });
+        const qrSize = 40;
+        doc.addImage(qrDataUrl, 'PNG', (w - qrSize) / 2, yPos, qrSize, qrSize);
+        yPos += qrSize + 4;
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(107, 114, 128);
+        doc.text('Scan QR code at event entrance', w / 2, yPos, { align: 'center' });
+        yPos += 6;
+      }
+
+      // Ticket ID
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(156, 163, 175);
+      doc.text(`Ticket ID: ${ticket.id}`, w / 2, yPos, { align: 'center' });
+      yPos += 8;
+
+      // Footer
+      doc.setFillColor(243, 244, 246);
+      doc.rect(0, yPos - 2, w, 12, 'F');
+      doc.setFontSize(7);
+      doc.setTextColor(156, 163, 175);
+      doc.text('eventful-platform.com', w / 2, yPos + 4, { align: 'center' });
+
+      // Resize page to fit content
+      const pageHeight = yPos + 12;
+      (doc.internal as any).pageSize.height = pageHeight;
+
+      doc.save(`eventful-ticket-${ticket.id.slice(0, 8)}.pdf`);
+      toast.success('Ticket PDF downloaded!');
+    } catch {
+      toast.error('Failed to generate PDF');
+    }
   };
 
   if (loading) {
@@ -232,13 +324,22 @@ Status: ${ticket.status}
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={() => setSelectedTicket(null)}
-                className="w-full px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
-              >
-                Close
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => downloadTicket(selectedTicket)}
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition flex items-center justify-center gap-1"
+                >
+                  <HiDownload className="w-4 h-4" /> Download PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTicket(null)}
+                  className="flex-1 px-4 py-2 border border-[rgb(var(--border-primary))] text-[rgb(var(--text-primary))] rounded-lg hover:bg-[rgb(var(--bg-tertiary))] transition"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
