@@ -24,8 +24,17 @@ export class EventService {
     return event;
   }
 
-  static async getAll(page = 1, limit = 10, search?: string, category?: string) {
-    const cacheKey = `events:all:${page}:${limit}:${search || ''}:${category || ''}`;
+  static async getAll(
+    page = 1,
+    limit = 10,
+    search?: string,
+    category?: string,
+    dateFrom?: string,
+    dateTo?: string,
+    priceMin?: number,
+    priceMax?: number,
+  ) {
+    const cacheKey = `events:all:${page}:${limit}:${search || ''}:${category || ''}:${dateFrom || ''}:${dateTo || ''}:${priceMin ?? ''}:${priceMax ?? ''}`;
     const cached = await Cache.get(cacheKey);
     if (cached) return cached;
 
@@ -41,6 +50,18 @@ export class EventService {
 
     if (category) {
       where.category = { equals: category, mode: 'insensitive' };
+    }
+
+    if (dateFrom || dateTo) {
+      where.date = {};
+      if (dateFrom) where.date.gte = new Date(dateFrom);
+      if (dateTo) where.date.lte = new Date(dateTo);
+    }
+
+    if (priceMin !== undefined || priceMax !== undefined) {
+      where.price = {};
+      if (priceMin !== undefined) where.price.gte = priceMin;
+      if (priceMax !== undefined) where.price.lte = priceMax;
     }
 
     const [events, total] = await Promise.all([
@@ -63,6 +84,23 @@ export class EventService {
     await Cache.set(cacheKey, result, 180);
 
     return result;
+  }
+
+  static async getCategories() {
+    const cacheKey = 'events:categories';
+    const cached = await Cache.get<string[]>(cacheKey);
+    if (cached) return cached;
+
+    const results = await prisma.event.findMany({
+      where: { category: { not: null } },
+      select: { category: true },
+      distinct: ['category'],
+      orderBy: { category: 'asc' },
+    });
+
+    const categories = results.map((r) => r.category!).filter(Boolean);
+    await Cache.set(cacheKey, categories, 300);
+    return categories;
   }
 
   static async getById(id: string) {

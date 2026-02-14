@@ -19,9 +19,22 @@ export class EventController {
       const limit = parseInt(req.query.limit as string) || 10;
       const search = req.query.search as string | undefined;
       const category = req.query.category as string | undefined;
+      const dateFrom = req.query.dateFrom as string | undefined;
+      const dateTo = req.query.dateTo as string | undefined;
+      const priceMin = req.query.priceMin ? parseFloat(req.query.priceMin as string) : undefined;
+      const priceMax = req.query.priceMax ? parseFloat(req.query.priceMax as string) : undefined;
 
-      const result = await EventService.getAll(page, limit, search, category);
+      const result = await EventService.getAll(page, limit, search, category, dateFrom, dateTo, priceMin, priceMax);
       ApiResponse.paginated(res, (result as any).events, (result as any).total, page, limit);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getCategories(req: Request, res: Response, next: NextFunction) {
+    try {
+      const categories = await EventService.getCategories();
+      ApiResponse.success(res, categories);
     } catch (error) {
       next(error);
     }
