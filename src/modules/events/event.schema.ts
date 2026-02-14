@@ -1,5 +1,10 @@
 import { z } from 'zod';
 
+const imageUrlSchema = z.string().refine(
+  (val) => val.startsWith('/uploads/') || /^https?:\/\//.test(val),
+  'Must be a valid URL or an uploaded image path'
+);
+
 export const createEventSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
@@ -7,7 +12,7 @@ export const createEventSchema = z.object({
   location: z.string().min(1, 'Location is required'),
   price: z.number().min(0, 'Price must be 0 or greater'),
   capacity: z.number().int().min(1, 'Capacity must be at least 1'),
-  imageUrl: z.string().url().optional(),
+  imageUrl: imageUrlSchema.optional(),
   category: z.string().optional(),
   defaultReminderValue: z.number().int().min(1).optional(),
   defaultReminderUnit: z.enum(['MINUTES', 'HOURS', 'DAYS', 'WEEKS']).optional(),
@@ -20,7 +25,7 @@ export const updateEventSchema = z.object({
   location: z.string().min(1).optional(),
   price: z.number().min(0).optional(),
   capacity: z.number().int().min(1).optional(),
-  imageUrl: z.string().url().optional().nullable(),
+  imageUrl: imageUrlSchema.optional().nullable(),
   category: z.string().optional().nullable(),
   defaultReminderValue: z.number().int().min(1).optional().nullable(),
   defaultReminderUnit: z.enum(['MINUTES', 'HOURS', 'DAYS', 'WEEKS']).optional().nullable(),

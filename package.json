@@ -20,12 +20,19 @@
     "test:watch": "jest --watch --passWithNoTests",
     "test:coverage": "jest --coverage --passWithNoTests --forceExit --detectOpenHandles"
   },
-  "keywords": ["eventful", "events", "ticketing", "qrcode", "paystack"],
+  "keywords": [
+    "eventful",
+    "events",
+    "ticketing",
+    "qrcode",
+    "paystack"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^6.19.2",
+    "@types/multer": "^2.0.0",
     "bcryptjs": "^3.0.3",
     "bull": "^4.16.5",
     "cookie-parser": "^1.4.7",
@@ -37,6 +44,7 @@
     "ioredis": "^5.9.2",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
+    "multer": "^2.0.2",
     "node-cron": "^4.2.1",
     "qrcode": "^1.5.4",
     "rate-limit-redis": "^4.3.1",
