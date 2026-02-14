@@ -81,6 +81,12 @@ export interface ShareLinks {
   directLink: string;
 }
 
+export interface Bookmark {
+  id: string;
+  eventId: string;
+  createdAt: string;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   message?: string;

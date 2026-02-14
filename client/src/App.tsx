@@ -16,6 +16,7 @@ import PaymentCallback from './pages/PaymentCallback';
 import VerifyTicket from './pages/VerifyTicket';
 import LandingPage from './pages/LandingPage';
 import Profile from './pages/Profile';
+import SavedEvents from './pages/SavedEvents';
 
 function HomeRoute() {
   return <LandingPage />;
@@ -42,6 +43,7 @@ function App() {
             <Route path="/verify-ticket" element={<ProtectedRoute roles={['CREATOR']}><VerifyTicket /></ProtectedRoute>} />
             <Route path="/events/create" element={<ProtectedRoute roles={['CREATOR']}><CreateEvent /></ProtectedRoute>} />
             <Route path="/events/:id/edit" element={<ProtectedRoute roles={['CREATOR']}><CreateEvent /></ProtectedRoute>} />
+            <Route path="/saved" element={<ProtectedRoute><SavedEvents /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute roles={['CREATOR']}><Analytics /></ProtectedRoute>} />
           </Route>

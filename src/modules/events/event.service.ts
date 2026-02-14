@@ -259,6 +259,58 @@ export class EventService {
     return { message: 'Event deleted successfully' };
   }
 
+  static async toggleBookmark(userId: string, eventId: string) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) {
+      throw ApiError.notFound('Event not found');
+    }
+
+    const existing = await prisma.bookmark.findUnique({
+      where: { userId_eventId: { userId, eventId } },
+    });
+
+    if (existing) {
+      await prisma.bookmark.delete({ where: { id: existing.id } });
+      return { bookmarked: false };
+    }
+
+    await prisma.bookmark.create({ data: { userId, eventId } });
+    return { bookmarked: true };
+  }
+
+  static async getBookmarkedEvents(userId: string, page = 1, limit = 10) {
+    const [bookmarks, total] = await Promise.all([
+      prisma.bookmark.findMany({
+        where: { userId },
+        include: {
+          event: {
+            include: {
+              creator: {
+                select: { id: true, firstName: true, lastName: true },
+              },
+              _count: { select: { tickets: true } },
+            },
+          },
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.bookmark.count({ where: { userId } }),
+    ]);
+
+    const events = bookmarks.map((b) => b.event);
+    return { events, total, page, limit };
+  }
+
+  static async getBookmarkIds(userId: string) {
+    const bookmarks = await prisma.bookmark.findMany({
+      where: { userId },
+      select: { eventId: true },
+    });
+    return bookmarks.map((b) => b.eventId);
+  }
+
   static async getShareLinks(eventId: string): Promise<ShareLinks> {
     const event = await prisma.event.findUnique({ where: { id: eventId } });
 

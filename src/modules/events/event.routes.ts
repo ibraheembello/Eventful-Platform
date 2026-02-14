@@ -100,6 +100,43 @@ router.get('/categories', EventController.getCategories);
 
 /**
  * @swagger
+ * /events/bookmarks:
+ *   get:
+ *     summary: Get user's bookmarked events
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of bookmarked events
+ */
+router.get('/bookmarks', authenticate, EventController.getBookmarkedEvents);
+
+/**
+ * @swagger
+ * /events/bookmarks/ids:
+ *   get:
+ *     summary: Get IDs of all bookmarked events for the current user
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of event IDs
+ */
+router.get('/bookmarks/ids', authenticate, EventController.getBookmarkIds);
+
+/**
+ * @swagger
  * /events/my-events:
  *   get:
  *     summary: Get events created by the authenticated creator
@@ -250,6 +287,27 @@ router.get(
  *                       type: string
  */
 router.get('/:id/share', EventController.getShareLinks);
+
+/**
+ * @swagger
+ * /events/{id}/bookmark:
+ *   post:
+ *     summary: Toggle bookmark on an event
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Bookmark toggled
+ */
+router.post('/:id/bookmark', authenticate, EventController.toggleBookmark);
 
 /**
  * @swagger

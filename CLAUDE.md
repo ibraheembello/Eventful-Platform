@@ -702,29 +702,30 @@ Batch of 5 UI/UX improvements to polish the platform after initial deployment.
 
 ---
 
-### Feature F2: Bookmark / Save Events
+### Feature F2: Bookmark / Save Events -- COMPLETED (February 14, 2026)
 
 **Description**: Let users save events they're interested in to a personal "Saved Events" list.
 
 **Checklist**:
-- [ ] Add `Bookmark` model to Prisma schema (`userId`, `eventId`, unique constraint, timestamps)
-- [ ] Run Prisma migration
-- [ ] Create `POST /events/:id/bookmark` endpoint (toggle — creates or deletes)
-- [ ] Create `GET /events/bookmarks` endpoint (list user's saved events with pagination)
-- [ ] Add bookmark icon (heart/bookmark) to event cards on Events page
-- [ ] Add bookmark icon to EventDetail page
-- [ ] Highlight icon when event is already bookmarked
-- [ ] Create `SavedEvents.tsx` page to list all bookmarked events
-- [ ] Add "Saved" link to navbar (with count badge)
-- [ ] Add route `/saved` in `App.tsx`
-- [ ] Update frontend types (`Bookmark` interface)
+- [x] Add `Bookmark` model to Prisma schema (`userId`, `eventId`, unique constraint, timestamps)
+- [x] Run Prisma migration (`20260214045711_add_bookmarks`)
+- [x] Create `POST /events/:id/bookmark` endpoint (toggle — creates or deletes)
+- [x] Create `GET /events/bookmarks` endpoint (list user's saved events with pagination)
+- [x] Create `GET /events/bookmarks/ids` endpoint (returns array of bookmarked event IDs for quick lookup)
+- [x] Add bookmark icon to event cards on Events page (optimistic UI toggle)
+- [x] Add bookmark icon to EventDetail page
+- [x] Highlight icon when event is already bookmarked (filled vs outline)
+- [x] Create `SavedEvents.tsx` page to list all bookmarked events
+- [x] Add "Saved" link to navbar (desktop + mobile)
+- [x] Add route `/saved` in `App.tsx`
+- [x] Update frontend types (`Bookmark` interface)
 
 **Success Criteria**:
-- Clicking the bookmark icon on any event card toggles the saved state instantly (optimistic UI)
-- Saved Events page lists all bookmarked events with the same card style as Events page
-- Bookmarks persist across sessions (stored in database)
-- Unbookmarking from the Saved Events page removes the card with animation
-- Only authenticated users can bookmark (unauthenticated see tooltip: "Login to save")
+- [x] Clicking the bookmark icon on any event card toggles the saved state instantly (optimistic UI)
+- [x] Saved Events page lists all bookmarked events with the same card style as Events page
+- [x] Bookmarks persist across sessions (stored in database)
+- [x] Unbookmarking from the Saved Events page removes the card with animation
+- [x] Only authenticated users can bookmark (unauthenticated see toast: "Login to save events")
 
 ---
 
@@ -952,7 +953,7 @@ Batch of 5 UI/UX improvements to polish the platform after initial deployment.
 |----------|---------|--------|--------|
 | 1 | ~~F1: Event Search Filters~~ | ~~Medium~~ | **DONE** |
 | 2 | ~~F5: Export Tickets as PDF~~ | ~~Low~~ | **DONE** |
-| 3 | F2: Bookmark/Save Events | Low | Medium — improves engagement |
+| 3 | ~~F2: Bookmark/Save Events~~ | ~~Low~~ | **DONE** |
 | 4 | F9: Attendee Check-in List | Medium | High — essential for creators |
 | 5 | F8: Creator Dashboard Charts | Medium | Medium — visual polish for analytics |
 | 6 | F4: Waitlist for Sold-Out Events | Medium | Medium — handles sold-out gracefully |

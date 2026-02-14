@@ -5,7 +5,7 @@ import type { Event, ShareLinks } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineShare, HiOutlinePencil, HiOutlineTrash, HiOutlineClock, HiOutlineTag } from 'react-icons/hi';
+import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineShare, HiOutlinePencil, HiOutlineTrash, HiOutlineClock, HiOutlineTag, HiOutlineBookmark, HiBookmark } from 'react-icons/hi';
 import { FaTwitter, FaFacebook, FaLinkedin, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
 
 export default function EventDetail() {
@@ -17,13 +17,22 @@ export default function EventDetail() {
   const [showShare, setShowShare] = useState(false);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
 
   useEffect(() => {
     api.get(`/events/${id}`)
       .then((res) => setEvent(res.data.data))
       .catch(() => toast.error('Event not found'))
       .finally(() => setLoading(false));
-  }, [id]);
+    if (user) {
+      api.get('/events/bookmarks/ids')
+        .then((res) => {
+          const ids: string[] = res.data.data || [];
+          setBookmarked(ids.includes(id!));
+        })
+        .catch(() => {});
+    }
+  }, [id, user]);
 
   const handleShare = async () => {
     if (shareLinks) { setShowShare(!showShare); return; }
@@ -46,6 +55,18 @@ export default function EventDetail() {
       toast.error(err.response?.data?.message || 'Payment failed');
     } finally {
       setPaying(false);
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (!user) { navigate('/login'); return; }
+    const was = bookmarked;
+    setBookmarked(!was);
+    try {
+      await api.post(`/events/${id}/bookmark`);
+    } catch {
+      setBookmarked(was);
+      toast.error('Failed to update bookmark');
     }
   };
 
@@ -105,6 +126,18 @@ export default function EventDetail() {
 
             {/* Action Buttons Overlay */}
             <div className="absolute top-4 right-4 flex gap-2">
+              <button
+                type="button"
+                onClick={handleBookmark}
+                aria-label={bookmarked ? 'Remove bookmark' : 'Bookmark event'}
+                className="glass-light p-2.5 rounded-lg hover:bg-white/30 transition-all duration-200"
+              >
+                {bookmarked ? (
+                  <HiBookmark className="w-5 h-5 text-emerald-400" />
+                ) : (
+                  <HiOutlineBookmark className="w-5 h-5 text-white" />
+                )}
+              </button>
               <button
                 type="button"
                 onClick={handleShare}
