@@ -3,7 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import { upload } from '../../middleware/upload';
 import { authenticate } from '../../middleware/auth';
-import { authorize } from '../../middleware/authorize';
 
 const router = Router();
 
@@ -17,7 +16,7 @@ if (!fs.existsSync(uploadsDir)) {
  * @swagger
  * /upload:
  *   post:
- *     summary: Upload an event image (Creator only)
+ *     summary: Upload an image
  *     tags: [Upload]
  *     security:
  *       - bearerAuth: []
@@ -51,13 +50,10 @@ if (!fs.existsSync(uploadsDir)) {
  *         description: No file uploaded or invalid file type
  *       401:
  *         description: Unauthorized
- *       403:
- *         description: Only creators can upload images
  */
 router.post(
   '/',
   authenticate,
-  authorize('CREATOR'),
   (req: Request, res: Response, next: NextFunction) => {
     upload.single('image')(req, res, (err: any) => {
       if (err) {

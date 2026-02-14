@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
-import { HiOutlineCamera, HiOutlineUser, HiOutlineMail, HiOutlineShieldCheck, HiOutlineCalendar } from 'react-icons/hi';
+import { HiOutlineCamera, HiOutlineUser, HiOutlineMail, HiOutlineShieldCheck, HiOutlineCalendar, HiOutlineUpload, HiOutlineLink } from 'react-icons/hi';
 
 export default function Profile() {
   const { user, updateProfile } = useAuth();
@@ -13,6 +13,8 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload');
+  const [imageUrl, setImageUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (file: File) => {
@@ -81,7 +83,7 @@ export default function Profile() {
           <h2 className="text-lg font-semibold text-[rgb(var(--text-primary))] mb-4">Profile Photo</h2>
           <div className="flex items-center gap-6">
             {/* Avatar Preview */}
-            <div className="relative group">
+            <div className="relative group flex-shrink-0">
               {profileImage ? (
                 <img
                   src={profileImage}
@@ -93,38 +95,96 @@ export default function Profile() {
                   {user.firstName?.[0]}{user.lastName?.[0]}
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-              >
-                <HiOutlineCamera className="w-6 h-6 text-white" />
-              </button>
-            </div>
-
-            {/* Upload Zone */}
-            <div
-              className={`flex-1 border-2 border-dashed rounded-xl p-4 text-center transition-colors cursor-pointer ${
-                dragOver
-                  ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                  : 'border-[rgb(var(--border-primary))] hover:border-emerald-400'
-              }`}
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={handleDrop}
-            >
-              {uploading ? (
-                <p className="text-sm text-[rgb(var(--text-secondary))]">Uploading...</p>
-              ) : (
-                <>
-                  <p className="text-sm text-[rgb(var(--text-secondary))]">
-                    Drag & drop an image or <span className="text-emerald-600 dark:text-emerald-400 font-medium">browse</span>
-                  </p>
-                  <p className="text-xs text-[rgb(var(--text-tertiary))] mt-1">JPEG, PNG, GIF, WebP up to 5MB</p>
-                </>
+              {imageMode === 'upload' && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                >
+                  <HiOutlineCamera className="w-6 h-6 text-white" />
+                </button>
               )}
             </div>
+
+            <div className="flex-1 space-y-3">
+              {/* Mode Toggle */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setImageMode('upload')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    imageMode === 'upload'
+                      ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                      : 'text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-tertiary))]'
+                  }`}
+                >
+                  <HiOutlineUpload className="w-3.5 h-3.5" /> Upload File
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageMode('url')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    imageMode === 'url'
+                      ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                      : 'text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-tertiary))]'
+                  }`}
+                >
+                  <HiOutlineLink className="w-3.5 h-3.5" /> Paste URL
+                </button>
+              </div>
+
+              {imageMode === 'upload' ? (
+                /* Upload Zone */
+                <div
+                  className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors cursor-pointer ${
+                    dragOver
+                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                      : 'border-[rgb(var(--border-primary))] hover:border-emerald-400'
+                  }`}
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleDrop}
+                >
+                  {uploading ? (
+                    <p className="text-sm text-[rgb(var(--text-secondary))]">Uploading...</p>
+                  ) : (
+                    <>
+                      <p className="text-sm text-[rgb(var(--text-secondary))]">
+                        Drag & drop an image or <span className="text-emerald-600 dark:text-emerald-400 font-medium">browse</span>
+                      </p>
+                      <p className="text-xs text-[rgb(var(--text-tertiary))] mt-1">JPEG, PNG, GIF, WebP up to 5MB</p>
+                    </>
+                  )}
+                </div>
+              ) : (
+                /* URL Input */
+                <div className="space-y-2">
+                  <input
+                    type="url"
+                    placeholder="https://example.com/your-image.jpg"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-[rgb(var(--border-primary))] rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!imageUrl.trim() || !/^https?:\/\/.+/.test(imageUrl.trim())) {
+                        toast.error('Please enter a valid image URL');
+                        return;
+                      }
+                      setProfileImage(imageUrl.trim());
+                      toast.success('Image URL set');
+                    }}
+                    className="px-4 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+                  >
+                    Apply URL
+                  </button>
+                </div>
+              )}
+            </div>
+
             <input
               ref={fileInputRef}
               type="file"
