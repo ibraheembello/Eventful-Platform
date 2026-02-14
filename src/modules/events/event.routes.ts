@@ -235,9 +235,30 @@ router.get('/:id', EventController.getById);
  *         name: limit
  *         schema:
  *           type: integer
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by attendee name or email
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [ACTIVE, USED, CANCELLED]
+ *         description: Filter by ticket status
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [name, date, status, scannedAt]
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
  *     responses:
  *       200:
- *         description: List of attendees
+ *         description: List of attendees with stats
  *       403:
  *         description: Forbidden
  */
@@ -287,6 +308,40 @@ router.get(
  *                       type: string
  */
 router.get('/:id/share', EventController.getShareLinks);
+
+/**
+ * @swagger
+ * /events/{id}/check-in:
+ *   post:
+ *     summary: Manually check in an attendee (Creator only)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [ticketId]
+ *             properties:
+ *               ticketId:
+ *                 type: string
+ *                 format: uuid
+ *     responses:
+ *       200:
+ *         description: Attendee checked in
+ *       403:
+ *         description: Forbidden
+ */
+router.post('/:id/check-in', authenticate, authorize('CREATOR'), EventController.manualCheckIn);
 
 /**
  * @swagger

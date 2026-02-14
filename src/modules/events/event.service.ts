@@ -151,7 +151,16 @@ export class EventService {
     return result;
   }
 
-  static async getEventAttendees(eventId: string, creatorId: string, page = 1, limit = 10) {
+  static async getEventAttendees(
+    eventId: string,
+    creatorId: string,
+    page = 1,
+    limit = 10,
+    search?: string,
+    status?: string,
+    sortBy?: string,
+    sortOrder?: string,
+  ) {
     const event = await prisma.event.findUnique({ where: { id: eventId } });
 
     if (!event) {
@@ -162,9 +171,32 @@ export class EventService {
       throw ApiError.forbidden('You can only view attendees for your own events');
     }
 
+    const where: any = { eventId };
+
+    if (search) {
+      where.user = {
+        OR: [
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+        ],
+      };
+    }
+
+    if (status && ['ACTIVE', 'USED', 'CANCELLED'].includes(status)) {
+      where.status = status;
+    }
+
+    let orderBy: any = { createdAt: 'desc' };
+    const order = sortOrder === 'asc' ? 'asc' : 'desc';
+    if (sortBy === 'name') orderBy = { user: { firstName: order } };
+    else if (sortBy === 'date') orderBy = { createdAt: order };
+    else if (sortBy === 'status') orderBy = { status: order };
+    else if (sortBy === 'scannedAt') orderBy = { scannedAt: order };
+
     const [tickets, total] = await Promise.all([
       prisma.ticket.findMany({
-        where: { eventId },
+        where,
         include: {
           user: {
             select: { id: true, firstName: true, lastName: true, email: true },
@@ -172,12 +204,53 @@ export class EventService {
         },
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
       }),
-      prisma.ticket.count({ where: { eventId } }),
+      prisma.ticket.count({ where }),
     ]);
 
-    return { attendees: tickets, total, page, limit };
+    // Stats
+    const [totalTickets, checkedIn, cancelled] = await Promise.all([
+      prisma.ticket.count({ where: { eventId } }),
+      prisma.ticket.count({ where: { eventId, status: 'USED' } }),
+      prisma.ticket.count({ where: { eventId, status: 'CANCELLED' } }),
+    ]);
+
+    return {
+      attendees: tickets,
+      total,
+      page,
+      limit,
+      stats: {
+        totalTickets,
+        checkedIn,
+        remaining: totalTickets - checkedIn - cancelled,
+        cancelled,
+      },
+    };
+  }
+
+  static async manualCheckIn(ticketId: string, eventId: string, creatorId: string) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only check in attendees for your own events');
+
+    const ticket = await prisma.ticket.findFirst({
+      where: { id: ticketId, eventId },
+    });
+    if (!ticket) throw ApiError.notFound('Ticket not found');
+    if (ticket.status === 'USED') throw ApiError.badRequest('Ticket already checked in');
+    if (ticket.status === 'CANCELLED') throw ApiError.badRequest('Ticket is cancelled');
+
+    const updated = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { status: 'USED', scannedAt: new Date() },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+    });
+
+    return updated;
   }
 
   static async getEventeeEvents(userId: string, page = 1, limit = 10) {

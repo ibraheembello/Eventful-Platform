@@ -64,22 +64,48 @@ export class EventController {
   static async getEventAttendees(req: Request, res: Response, next: NextFunction) {
     try {
       const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 10;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const search = req.query.search as string | undefined;
+      const status = req.query.status as string | undefined;
+      const sortBy = req.query.sortBy as string | undefined;
+      const sortOrder = req.query.sortOrder as string | undefined;
 
       const result = await EventService.getEventAttendees(
         param(req, 'id'),
         req.user!.userId,
         page,
-        limit
-      );
-      ApiResponse.paginated(
-        res,
-        (result as any).attendees,
-        (result as any).total,
-        page,
         limit,
-        'Attendees retrieved successfully'
+        search,
+        status,
+        sortBy,
+        sortOrder,
       );
+
+      res.json({
+        success: true,
+        data: (result as any).attendees,
+        stats: (result as any).stats,
+        pagination: {
+          page,
+          limit,
+          total: (result as any).total,
+          totalPages: Math.ceil((result as any).total / limit),
+        },
+        message: 'Attendees retrieved successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async manualCheckIn(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await EventService.manualCheckIn(
+        req.body.ticketId,
+        param(req, 'id'),
+        req.user!.userId,
+      );
+      ApiResponse.success(res, result, 'Attendee checked in successfully');
     } catch (error) {
       next(error);
     }
