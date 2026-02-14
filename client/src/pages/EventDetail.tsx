@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../lib/api';
 import type { Event, ShareLinks } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -148,6 +148,13 @@ export default function EventDetail() {
               </button>
               {isCreator && (
                 <>
+                  <Link
+                    to={`/events/${id}/attendees`}
+                    aria-label="View attendees"
+                    className="glass-light p-2.5 rounded-lg hover:bg-white/30 transition-all duration-200"
+                  >
+                    <HiOutlineUsers className="w-5 h-5 text-white" />
+                  </Link>
                   <button
                     type="button"
                     onClick={() => navigate(`/events/${id}/edit`)}
