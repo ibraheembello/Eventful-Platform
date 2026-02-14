@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
@@ -14,6 +14,13 @@ import Reminders from './pages/Reminders';
 import Analytics from './pages/Analytics';
 import PaymentCallback from './pages/PaymentCallback';
 import VerifyTicket from './pages/VerifyTicket';
+import LandingPage from './pages/LandingPage';
+
+function HomeRoute() {
+  const { user } = useAuth();
+  if (user) return <Navigate to="/events" replace />;
+  return <LandingPage />;
+}
 
 function App() {
   return (
@@ -22,11 +29,11 @@ function App() {
         <AuthProvider>
           <Toaster position="top-right" />
           <Routes>
+          <Route path="/" element={<HomeRoute />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
           <Route element={<Layout />}>
-            <Route path="/" element={<Navigate to="/events" replace />} />
             <Route path="/events" element={<Events />} />
             <Route path="/events/:id" element={<EventDetail />} />
 
