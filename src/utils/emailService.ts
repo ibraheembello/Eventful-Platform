@@ -129,6 +129,45 @@ export class EmailService {
     await this.send(email, `Reminder: ${event.title}`, html);
   }
 
+  static async sendEventUpdate(
+    email: string,
+    firstName: string,
+    event: { title: string; date: Date | string; location: string; id: string },
+    changes: string[],
+  ) {
+    const dateStr = new Date(event.date).toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+    });
+    const changeList = changes.map((c) => `<li style="padding:4px 0;color:#6b7280">${c}</li>`).join('');
+    const html = baseTemplate('Event Updated', `
+      <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">Hi ${firstName},</p>
+      <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">
+        The organizer has updated <strong style="color:#111827">${event.title}</strong>. Here's what changed:
+      </p>
+      <ul style="margin:0 0 16px;padding-left:20px">${changeList}</ul>
+      <div style="background:#f9fafb;border-radius:12px;padding:20px;margin:16px 0">
+        <table style="width:100%;border-collapse:collapse">
+          <tr>
+            <td style="padding:8px 0;color:#9ca3af;font-size:13px">Event</td>
+            <td style="padding:8px 0;color:#111827;font-weight:600;text-align:right">${event.title}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#9ca3af;font-size:13px">Date</td>
+            <td style="padding:8px 0;color:#111827;text-align:right;font-size:13px">${dateStr}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#9ca3af;font-size:13px">Location</td>
+            <td style="padding:8px 0;color:#111827;text-align:right;font-size:13px">${event.location}</td>
+          </tr>
+        </table>
+      </div>
+      ${button('View Updated Event', `${clientUrl}/events/${event.id}`)}
+      <p style="color:#9ca3af;font-size:12px;margin:16px 0 0">Your ticket is still valid. No action needed.</p>
+    `);
+    await this.send(email, `Event Updated: ${event.title}`, html);
+  }
+
   static async sendWaitlistNotification(
     email: string,
     firstName: string,
