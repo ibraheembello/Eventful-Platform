@@ -8,6 +8,7 @@ import {
   HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineArrowRight,
   HiOutlineBookmark, HiOutlineClipboardList, HiOutlineDocumentDownload,
   HiOutlineUserGroup, HiOutlineCheck, HiOutlineStar, HiOutlineMenu, HiOutlineX,
+  HiOutlineSearch, HiOutlineChatAlt2, HiOutlineMail, HiOutlinePhotograph,
 } from 'react-icons/hi';
 import api from '../lib/api';
 import type { Event } from '../types';
@@ -718,6 +719,12 @@ export default function LandingPage() {
                 color: 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400',
               },
               {
+                icon: <HiOutlineSearch className="w-6 h-6" />,
+                title: 'Search & Filters',
+                description: 'Find events by keyword, category, date range, and price.',
+                color: 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-400',
+              },
+              {
                 icon: <HiOutlineBookmark className="w-6 h-6" />,
                 title: 'Bookmark Events',
                 description: 'Save events you love and come back to them anytime.',
@@ -740,6 +747,24 @@ export default function LandingPage() {
                 title: 'Attendee Check-in',
                 description: 'Track check-ins live with search, filters, and CSV export.',
                 color: 'bg-pink-100 dark:bg-pink-900/40 text-pink-600 dark:text-pink-400',
+              },
+              {
+                icon: <HiOutlineChatAlt2 className="w-6 h-6" />,
+                title: 'Comments & Reviews',
+                description: 'Rate events with stars and leave reviews for the community.',
+                color: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400',
+              },
+              {
+                icon: <HiOutlineMail className="w-6 h-6" />,
+                title: 'Email Notifications',
+                description: 'Automatic emails for tickets, reminders, and event updates.',
+                color: 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400',
+              },
+              {
+                icon: <HiOutlinePhotograph className="w-6 h-6" />,
+                title: 'Image Gallery',
+                description: 'Multi-image galleries with lightbox viewer for every event.',
+                color: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400',
               },
             ].map((feature) => (
               <div
@@ -987,8 +1012,8 @@ export default function LandingPage() {
               <div className="space-y-2.5">
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">QR Code Tickets</span>
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Analytics Dashboard</span>
-                <span className="block text-sm text-[rgb(var(--text-secondary))]">Attendee Management</span>
-                <span className="block text-sm text-[rgb(var(--text-secondary))]">Secure Payments</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Email Notifications</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Comments & Reviews</span>
               </div>
             </div>
             {/* Resources */}
