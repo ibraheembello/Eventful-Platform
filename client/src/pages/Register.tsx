@@ -57,8 +57,9 @@ export default function Register() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">First Name</label>
+                <label htmlFor="firstName" className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">First Name</label>
                 <input
+                  id="firstName"
                   type="text"
                   required
                   value={form.firstName}
@@ -67,8 +68,9 @@ export default function Register() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">Last Name</label>
+                <label htmlFor="lastName" className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">Last Name</label>
                 <input
+                  id="lastName"
                   type="text"
                   required
                   value={form.lastName}
