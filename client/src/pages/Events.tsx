@@ -7,8 +7,9 @@ import { format } from 'date-fns';
 import {
   HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers,
   HiOutlineCurrencyDollar, HiOutlineSearch, HiOutlinePlus, HiOutlineTag,
-  HiOutlineFilter, HiOutlineX,
+  HiOutlineFilter, HiOutlineX, HiOutlineBookmark, HiBookmark,
 } from 'react-icons/hi';
+import toast from 'react-hot-toast';
 
 export default function Events() {
   const { user } = useAuth();
@@ -20,6 +21,7 @@ export default function Events() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
   const [totalEvents, setTotalEvents] = useState(0);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const limit = 12;
 
   // Read filters from URL
@@ -50,12 +52,17 @@ export default function Events() {
     setSearchParams(params);
   };
 
-  // Fetch categories on mount
+  // Fetch categories and bookmark IDs on mount
   useEffect(() => {
     api.get('/events/categories')
       .then((res) => setCategories(res.data.data || []))
       .catch(() => {});
-  }, []);
+    if (user) {
+      api.get('/events/bookmarks/ids')
+        .then((res) => setBookmarkedIds(new Set(res.data.data || [])))
+        .catch(() => {});
+    }
+  }, [user]);
 
   // Fetch events when filters change
   useEffect(() => {
@@ -77,6 +84,35 @@ export default function Events() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [page, search, category, dateFrom, dateTo, priceMin, priceMax]);
+
+  const toggleBookmark = async (e: React.MouseEvent, eventId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      toast('Login to save events', { icon: '🔒' });
+      return;
+    }
+    const wasBookmarked = bookmarkedIds.has(eventId);
+    // Optimistic update
+    setBookmarkedIds((prev) => {
+      const next = new Set(prev);
+      if (wasBookmarked) next.delete(eventId);
+      else next.add(eventId);
+      return next;
+    });
+    try {
+      await api.post(`/events/${eventId}/bookmark`);
+    } catch {
+      // Revert on failure
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (wasBookmarked) next.add(eventId);
+        else next.delete(eventId);
+        return next;
+      });
+      toast.error('Failed to update bookmark');
+    }
+  };
 
   return (
     <div>
@@ -412,16 +448,30 @@ export default function Events() {
                       </div>
                     )}
 
+                    {/* Bookmark Button */}
+                    <button
+                      type="button"
+                      onClick={(e) => toggleBookmark(e, event.id)}
+                      className="absolute top-3 right-3 p-2 rounded-full bg-black/30 hover:bg-black/50 transition-colors z-10"
+                      aria-label={bookmarkedIds.has(event.id) ? 'Remove bookmark' : 'Bookmark event'}
+                    >
+                      {bookmarkedIds.has(event.id) ? (
+                        <HiBookmark className="w-5 h-5 text-emerald-400" />
+                      ) : (
+                        <HiOutlineBookmark className="w-5 h-5 text-white" />
+                      )}
+                    </button>
+
                     {/* Status Badges */}
                     {soldOut && (
-                      <div className="absolute top-3 right-3">
+                      <div className="absolute bottom-3 right-3">
                         <div className="px-3 py-1 rounded-full bg-red-500/90 text-white text-xs font-semibold">
                           Sold Out
                         </div>
                       </div>
                     )}
                     {!soldOut && almostSoldOut && (
-                      <div className="absolute top-3 right-3">
+                      <div className="absolute bottom-3 right-3">
                         <div className="px-3 py-1 rounded-full bg-orange-500/90 text-white text-xs font-semibold">
                           Almost Full
                         </div>

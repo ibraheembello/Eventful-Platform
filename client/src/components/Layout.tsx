@@ -1,7 +1,7 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { HiOutlineTicket, HiOutlineBell, HiOutlineChartBar, HiOutlineCalendar, HiOutlineLogout, HiOutlineMenu, HiOutlineX, HiOutlineQrcode, HiOutlineMoon, HiOutlineSun, HiOutlineUserCircle, HiOutlineHome } from 'react-icons/hi';
+import { HiOutlineTicket, HiOutlineBell, HiOutlineChartBar, HiOutlineCalendar, HiOutlineLogout, HiOutlineMenu, HiOutlineX, HiOutlineQrcode, HiOutlineMoon, HiOutlineSun, HiOutlineUserCircle, HiOutlineHome, HiOutlineBookmark } from 'react-icons/hi';
 import { useState } from 'react';
 
 export default function Layout() {
@@ -36,6 +36,9 @@ export default function Layout() {
                     </Link>
                     <Link to="/notifications" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
                       <HiOutlineBell className="w-4 h-4" /> Reminders
+                    </Link>
+                    <Link to="/saved" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
+                      <HiOutlineBookmark className="w-4 h-4" /> Saved
                     </Link>
                     {user.role === 'CREATOR' && (
                       <>
@@ -107,6 +110,7 @@ export default function Layout() {
               <>
                 <Link to="/tickets" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">My Tickets</Link>
                 <Link to="/notifications" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Reminders</Link>
+                <Link to="/saved" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Saved Events</Link>
                 {user.role === 'CREATOR' && (
                   <>
                     <Link to="/analytics" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Analytics</Link>

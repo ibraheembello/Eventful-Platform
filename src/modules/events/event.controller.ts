@@ -115,6 +115,36 @@ export class EventController {
     }
   }
 
+  static async toggleBookmark(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await EventService.toggleBookmark(req.user!.userId, param(req, 'id'));
+      ApiResponse.success(res, result, result.bookmarked ? 'Event bookmarked' : 'Bookmark removed');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getBookmarkedEvents(req: Request, res: Response, next: NextFunction) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const result = await EventService.getBookmarkedEvents(req.user!.userId, page, limit);
+      ApiResponse.paginated(res, (result as any).events, (result as any).total, page, limit);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getBookmarkIds(req: Request, res: Response, next: NextFunction) {
+    try {
+      const ids = await EventService.getBookmarkIds(req.user!.userId);
+      ApiResponse.success(res, ids);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getShareLinks(req: Request, res: Response, next: NextFunction) {
     try {
       const links = await EventService.getShareLinks(param(req, 'id'));
