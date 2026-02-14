@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AuthController } from './auth.controller';
 import { validate } from '../../middleware/validate';
-import { registerSchema, loginSchema } from './auth.schema';
+import { registerSchema, loginSchema, updateProfileSchema } from './auth.schema';
 import { authenticate } from '../../middleware/auth';
 import { authLimiter } from '../../middleware/rateLimiter';
 
@@ -138,6 +138,38 @@ router.post('/login', authLimiter, validate(loginSchema), AuthController.login);
  *         description: Unauthorized
  */
 router.get('/profile', authenticate, AuthController.getProfile);
+
+/**
+ * @swagger
+ * /auth/profile:
+ *   put:
+ *     summary: Update current user profile
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *                 example: John
+ *               lastName:
+ *                 type: string
+ *                 example: Doe
+ *               profileImage:
+ *                 type: string
+ *                 example: /uploads/avatar.jpg
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *       401:
+ *         description: Unauthorized
+ */
+router.put('/profile', authenticate, validate(updateProfileSchema), AuthController.updateProfile);
 
 /**
  * @swagger

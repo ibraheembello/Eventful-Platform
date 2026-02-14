@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
@@ -15,10 +15,9 @@ import Analytics from './pages/Analytics';
 import PaymentCallback from './pages/PaymentCallback';
 import VerifyTicket from './pages/VerifyTicket';
 import LandingPage from './pages/LandingPage';
+import Profile from './pages/Profile';
 
 function HomeRoute() {
-  const { user } = useAuth();
-  if (user) return <Navigate to="/events" replace />;
   return <LandingPage />;
 }
 
@@ -43,6 +42,7 @@ function App() {
             <Route path="/verify-ticket" element={<ProtectedRoute roles={['CREATOR']}><VerifyTicket /></ProtectedRoute>} />
             <Route path="/events/create" element={<ProtectedRoute roles={['CREATOR']}><CreateEvent /></ProtectedRoute>} />
             <Route path="/events/:id/edit" element={<ProtectedRoute roles={['CREATOR']}><CreateEvent /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute roles={['CREATOR']}><Analytics /></ProtectedRoute>} />
           </Route>
         </Routes>

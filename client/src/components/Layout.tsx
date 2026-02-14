@@ -1,7 +1,7 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { HiOutlineTicket, HiOutlineBell, HiOutlineChartBar, HiOutlineCalendar, HiOutlineLogout, HiOutlineMenu, HiOutlineX, HiOutlineQrcode, HiOutlineMoon, HiOutlineSun } from 'react-icons/hi';
+import { HiOutlineTicket, HiOutlineBell, HiOutlineChartBar, HiOutlineCalendar, HiOutlineLogout, HiOutlineMenu, HiOutlineX, HiOutlineQrcode, HiOutlineMoon, HiOutlineSun, HiOutlineUserCircle, HiOutlineHome } from 'react-icons/hi';
 import { useState } from 'react';
 
 export default function Layout() {
@@ -23,6 +23,9 @@ export default function Layout() {
             <div className="flex items-center">
               <Link to="/" className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">Eventful</Link>
               <div className="hidden md:flex ml-10 space-x-4">
+                <Link to="/" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
+                  <HiOutlineHome className="w-4 h-4" /> Home
+                </Link>
                 <Link to="/events" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
                   <HiOutlineCalendar className="w-4 h-4" /> Events
                 </Link>
@@ -59,7 +62,16 @@ export default function Layout() {
               </button>
               {user ? (
                 <>
-                  <span className="text-sm text-[rgb(var(--text-secondary))]">{user.firstName} ({user.role})</span>
+                  <Link to="/profile" className="flex items-center gap-2 text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                    {user.profileImage ? (
+                      <img src={user.profileImage} alt="" className="w-7 h-7 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs font-semibold">
+                        {user.firstName?.[0]}{user.lastName?.[0]}
+                      </div>
+                    )}
+                    {user.firstName}
+                  </Link>
                   <button onClick={handleLogout} className="flex items-center gap-1 text-sm text-[rgb(var(--text-secondary))] hover:text-red-600 dark:hover:text-red-400">
                     <HiOutlineLogout className="w-4 h-4" /> Logout
                   </button>
@@ -89,6 +101,7 @@ export default function Layout() {
         </div>
         {menuOpen && (
           <div className="md:hidden border-t border-[rgb(var(--border-primary))] px-4 py-3 space-y-2 bg-[rgb(var(--bg-primary))]">
+            <Link to="/" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Home</Link>
             <Link to="/events" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Events</Link>
             {user ? (
               <>
@@ -101,7 +114,14 @@ export default function Layout() {
                   </>
                 )}
                 <div className="pt-2 border-t border-[rgb(var(--border-primary))]">
-                  <span className="block px-3 py-1 text-xs text-[rgb(var(--text-tertiary))]">{user.firstName} ({user.role})</span>
+                  <Link to="/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">
+                    {user.profileImage ? (
+                      <img src={user.profileImage} alt="" className="w-6 h-6 rounded-full object-cover" />
+                    ) : (
+                      <HiOutlineUserCircle className="w-5 h-5" />
+                    )}
+                    My Profile
+                  </Link>
                   <button onClick={() => { handleLogout(); setMenuOpen(false); }} className="block w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-[rgb(var(--bg-secondary))] rounded-md">Logout</button>
                 </div>
               </>
