@@ -8,6 +8,14 @@ export interface User {
   createdAt: string;
 }
 
+export interface EventImage {
+  id: string;
+  url: string;
+  caption?: string;
+  order: number;
+  createdAt: string;
+}
+
 export interface Event {
   id: string;
   title: string;
@@ -21,6 +29,7 @@ export interface Event {
   creatorId: string;
   creator?: { id: string; firstName: string; lastName: string };
   _count?: { tickets: number };
+  images?: EventImage[];
   createdAt: string;
 }
 

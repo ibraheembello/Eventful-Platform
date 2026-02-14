@@ -36,6 +36,11 @@ export const createCommentSchema = z.object({
   rating: z.number().int().min(1, 'Rating must be 1-5').max(5, 'Rating must be 1-5'),
 });
 
+export const addEventImageSchema = z.object({
+  url: imageUrlSchema,
+  caption: z.string().max(200).optional(),
+});
+
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 export type UpdateEventInput = z.infer<typeof updateEventSchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;

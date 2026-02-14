@@ -248,6 +248,42 @@ export class EventController {
     }
   }
 
+  static async addEventImage(req: Request, res: Response, next: NextFunction) {
+    try {
+      const image = await EventService.addEventImage(
+        param(req, 'id'),
+        req.user!.userId,
+        req.body.url,
+        req.body.caption,
+      );
+      ApiResponse.created(res, image, 'Image added');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async removeEventImage(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await EventService.removeEventImage(
+        param(req, 'imageId'),
+        param(req, 'id'),
+        req.user!.userId,
+      );
+      ApiResponse.success(res, result, 'Image removed');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getEventImages(req: Request, res: Response, next: NextFunction) {
+    try {
+      const images = await EventService.getEventImages(param(req, 'id'));
+      ApiResponse.success(res, images);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getShareLinks(req: Request, res: Response, next: NextFunction) {
     try {
       const links = await EventService.getShareLinks(param(req, 'id'));

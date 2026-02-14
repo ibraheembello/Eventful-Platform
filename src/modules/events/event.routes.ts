@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { EventController } from './event.controller';
 import { validate } from '../../middleware/validate';
-import { createEventSchema, updateEventSchema, createCommentSchema } from './event.schema';
+import { createEventSchema, updateEventSchema, createCommentSchema, addEventImageSchema } from './event.schema';
 import { authenticate } from '../../middleware/auth';
 import { authorize } from '../../middleware/authorize';
 
@@ -529,6 +529,90 @@ router.post('/:id/waitlist', authenticate, EventController.joinWaitlist);
  *         description: Not on waitlist
  */
 router.delete('/:id/waitlist', authenticate, EventController.leaveWaitlist);
+
+/**
+ * @swagger
+ * /events/{id}/images:
+ *   get:
+ *     summary: Get gallery images for an event (public)
+ *     tags: [Events]
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: List of gallery images
+ */
+router.get('/:id/images', EventController.getEventImages);
+
+/**
+ * @swagger
+ * /events/{id}/images:
+ *   post:
+ *     summary: Add gallery image to an event (Creator only)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [url]
+ *             properties:
+ *               url:
+ *                 type: string
+ *               caption:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Image added
+ *       403:
+ *         description: Not event creator
+ */
+router.post('/:id/images', authenticate, authorize('CREATOR'), validate(addEventImageSchema), EventController.addEventImage);
+
+/**
+ * @swagger
+ * /events/{id}/images/{imageId}:
+ *   delete:
+ *     summary: Remove gallery image from an event (Creator only)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: imageId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Image removed
+ *       403:
+ *         description: Not event creator
+ */
+router.delete('/:id/images/:imageId', authenticate, authorize('CREATOR'), EventController.removeEventImage);
 
 /**
  * @swagger
