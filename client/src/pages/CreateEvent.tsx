@@ -306,8 +306,9 @@ export default function CreateEvent() {
 
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">Category (optional)</label>
+            <label htmlFor="category" className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">Category (optional)</label>
             <select
+              id="category"
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value })}
               className="w-full px-4 py-2.5 border border-[rgb(var(--border-primary))] rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))]"
@@ -321,8 +322,9 @@ export default function CreateEvent() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">Date & Time</label>
+              <label htmlFor="date" className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">Date & Time</label>
               <input
+                id="date"
                 type="datetime-local"
                 required
                 value={form.date}
@@ -345,8 +347,9 @@ export default function CreateEvent() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">Capacity</label>
+              <label htmlFor="capacity" className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">Capacity</label>
               <input
+                id="capacity"
                 type="number"
                 required
                 min={1}
@@ -356,8 +359,9 @@ export default function CreateEvent() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">Price (NGN)</label>
+              <label htmlFor="price" className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">Price (NGN)</label>
               <input
+                id="price"
                 type="number"
                 required
                 min={0}
@@ -380,6 +384,7 @@ export default function CreateEvent() {
                 placeholder="e.g. 1"
               />
               <select
+                aria-label="Reminder unit"
                 value={form.defaultReminderUnit}
                 onChange={(e) => setForm({ ...form, defaultReminderUnit: e.target.value })}
                 className="w-full px-4 py-2.5 border border-[rgb(var(--border-primary))] rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))]"

@@ -138,6 +138,7 @@ Status: ${ticket.status}
                     </button>
                     <button
                       onClick={() => downloadTicket(ticket)}
+                      aria-label="Download ticket"
                       className="px-3 py-2 bg-[rgb(var(--bg-tertiary))] text-[rgb(var(--text-secondary))] text-sm rounded-lg hover:bg-[rgb(var(--border-primary))] transition"
                     >
                       <HiDownload className="w-4 h-4" />

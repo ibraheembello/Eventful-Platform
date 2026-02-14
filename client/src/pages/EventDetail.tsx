@@ -108,6 +108,7 @@ export default function EventDetail() {
               <button
                 type="button"
                 onClick={handleShare}
+                aria-label="Share event"
                 className="glass-light p-2.5 rounded-lg hover:bg-white/30 transition-all duration-200"
               >
                 <HiOutlineShare className="w-5 h-5 text-white" />
@@ -117,6 +118,7 @@ export default function EventDetail() {
                   <button
                     type="button"
                     onClick={() => navigate(`/events/${id}/edit`)}
+                    aria-label="Edit event"
                     className="glass-light p-2.5 rounded-lg hover:bg-white/30 transition-all duration-200"
                   >
                     <HiOutlinePencil className="w-5 h-5 text-white" />
@@ -124,6 +126,7 @@ export default function EventDetail() {
                   <button
                     type="button"
                     onClick={handleDelete}
+                    aria-label="Delete event"
                     className="glass-light p-2.5 rounded-lg hover:bg-red-500/80 transition-all duration-200"
                   >
                     <HiOutlineTrash className="w-5 h-5 text-white" />
@@ -148,19 +151,19 @@ export default function EventDetail() {
             <div className="glass border border-[rgb(var(--border-primary))] rounded-xl p-5 space-y-3">
               <p className="text-sm font-semibold text-[rgb(var(--text-primary))]">Share this event</p>
               <div className="flex gap-3">
-                <a href={shareLinks.twitter} target="_blank" rel="noopener noreferrer" className="p-3 rounded-lg bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 hover:scale-110 transition-transform">
+                <a href={shareLinks.twitter} target="_blank" rel="noopener noreferrer" aria-label="Share on Twitter" className="p-3 rounded-lg bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 hover:scale-110 transition-transform">
                   <FaTwitter size={18} />
                 </a>
-                <a href={shareLinks.facebook} target="_blank" rel="noopener noreferrer" className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:scale-110 transition-transform">
+                <a href={shareLinks.facebook} target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook" className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:scale-110 transition-transform">
                   <FaFacebook size={18} />
                 </a>
-                <a href={shareLinks.linkedin} target="_blank" rel="noopener noreferrer" className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:scale-110 transition-transform">
+                <a href={shareLinks.linkedin} target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn" className="p-3 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:scale-110 transition-transform">
                   <FaLinkedin size={18} />
                 </a>
-                <a href={shareLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:scale-110 transition-transform">
+                <a href={shareLinks.whatsapp} target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp" className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:scale-110 transition-transform">
                   <FaWhatsapp size={18} />
                 </a>
-                <a href={shareLinks.email} className="p-3 rounded-lg bg-[rgb(var(--bg-tertiary))] text-[rgb(var(--text-secondary))] hover:scale-110 transition-transform">
+                <a href={shareLinks.email} aria-label="Share via email" className="p-3 rounded-lg bg-[rgb(var(--bg-tertiary))] text-[rgb(var(--text-secondary))] hover:scale-110 transition-transform">
                   <FaEnvelope size={18} />
                 </a>
               </div>
