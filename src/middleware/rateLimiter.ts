@@ -23,14 +23,14 @@ const baseConfig = {
 export const globalLimiter = rateLimit({
   ...baseConfig,
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 500,
   ...(redis && sendCommand ? { store: new RedisStore({ sendCommand }) } : {}),
 });
 
 export const authLimiter = rateLimit({
   ...baseConfig,
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: 50,
   message: {
     success: false,
     message: 'Too many authentication attempts, please try again later.',
@@ -41,7 +41,7 @@ export const authLimiter = rateLimit({
 export const paymentLimiter = rateLimit({
   ...baseConfig,
   windowMs: 15 * 60 * 1000,
-  max: 30,
+  max: 50,
   message: {
     success: false,
     message: 'Too many payment requests, please try again later.',

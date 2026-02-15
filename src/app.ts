@@ -24,6 +24,9 @@ dotenv.config();
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Trust the Apache reverse proxy so rate limiting uses real client IPs
+app.set('trust proxy', 1);
+
 // Security & parsing middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
