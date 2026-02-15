@@ -32,6 +32,7 @@ export default function CreateEvent() {
   const [imagePreview, setImagePreview] = useState<string>('');
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [urlError, setUrlError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Gallery images (edit mode)
@@ -109,15 +110,10 @@ export default function CreateEvent() {
     try {
       const formData = new FormData();
       formData.append('image', imageFile);
-      const token = localStorage.getItem('accessToken');
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+      const res = await api.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Upload failed');
-      return data.data.imageUrl;
+      return res.data.data.imageUrl;
     } finally {
       setUploading(false);
     }
@@ -315,21 +311,28 @@ export default function CreateEvent() {
                   onChange={(e) => {
                     setForm({ ...form, imageUrl: e.target.value });
                     setImagePreview(e.target.value);
+                    setUrlError(false);
                   }}
                   className="w-full px-4 py-2.5 border border-[rgb(var(--border-primary))] rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))]"
                   placeholder="https://example.com/image.jpg"
                 />
                 {form.imageUrl && (
-                  <div className="mt-2 relative rounded-lg overflow-hidden h-32 bg-[rgb(var(--bg-tertiary))]">
-                    <img
-                      src={form.imageUrl}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                    />
+                  <div className="mt-2 relative rounded-lg overflow-hidden h-40 bg-[rgb(var(--bg-tertiary))]">
+                    {urlError ? (
+                      <div className="w-full h-full flex items-center justify-center text-[rgb(var(--text-tertiary))] text-sm">
+                        Image could not be loaded. Check the URL.
+                      </div>
+                    ) : (
+                      <img
+                        src={form.imageUrl}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={() => setUrlError(true)}
+                      />
+                    )}
                     <button
                       type="button"
-                      onClick={clearImage}
+                      onClick={() => { clearImage(); setUrlError(false); }}
                       className="absolute top-2 right-2 p-1 bg-black/60 rounded-full text-white hover:bg-black/80 transition"
                     >
                       <HiX className="w-4 h-4" />
