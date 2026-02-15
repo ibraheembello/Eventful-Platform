@@ -37,7 +37,35 @@ export class PaymentService {
 
     const reference = `EVT-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
 
-    // Call Paystack to initialize
+    // Free event — bypass Paystack, create ticket directly
+    if (event.price === 0) {
+      const payment = await prisma.payment.create({
+        data: {
+          userId,
+          eventId,
+          amount: 0,
+          paystackReference: reference,
+          paystackAccessCode: 'free',
+          paystackAuthUrl: 'free',
+          status: 'SUCCESS',
+          paidAt: new Date(),
+        },
+      });
+
+      const ticket = await TicketService.createTicket(userId, eventId, payment.id);
+
+      // Send confirmation email
+      EmailService.sendTicketConfirmation(user.email, user.firstName, event, 0).catch(() => {});
+
+      // Create automatic reminder if event has default
+      if (event.defaultReminderValue && event.defaultReminderUnit) {
+        NotificationService.createReminder(userId, eventId, event.defaultReminderValue, event.defaultReminderUnit).catch(() => {});
+      }
+
+      return { payment, ticket, free: true };
+    }
+
+    // Paid event — go through Paystack
     const response = await fetch(`${paystackConfig.baseUrl}/transaction/initialize`, {
       method: 'POST',
       headers: {

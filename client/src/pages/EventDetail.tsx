@@ -86,7 +86,12 @@ export default function EventDetail() {
     setPaying(true);
     try {
       const res = await api.post('/payments/initialize', { eventId: id });
-      window.location.href = res.data.data.authorizationUrl;
+      if (res.data.data.free) {
+        toast.success('Ticket claimed successfully!');
+        navigate('/tickets');
+      } else {
+        window.location.href = res.data.data.authorizationUrl;
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Payment failed');
     } finally {
