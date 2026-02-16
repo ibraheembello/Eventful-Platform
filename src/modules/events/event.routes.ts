@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { EventController } from './event.controller';
 import { validate } from '../../middleware/validate';
-import { createEventSchema, updateEventSchema, createCommentSchema, addEventImageSchema } from './event.schema';
+import { createEventSchema, updateEventSchema, createCommentSchema, addEventImageSchema, reorderImagesSchema, updateImageSchema } from './event.schema';
 import { authenticate } from '../../middleware/auth';
 import { authorize } from '../../middleware/authorize';
 
@@ -584,6 +584,80 @@ router.get('/:id/images', EventController.getEventImages);
  *         description: Not event creator
  */
 router.post('/:id/images', authenticate, authorize('CREATOR'), validate(addEventImageSchema), EventController.addEventImage);
+
+/**
+ * @swagger
+ * /events/{id}/images/reorder:
+ *   put:
+ *     summary: Reorder gallery images for an event (Creator only)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [imageIds]
+ *             properties:
+ *               imageIds:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *     responses:
+ *       200:
+ *         description: Images reordered
+ *       403:
+ *         description: Not event creator
+ */
+router.put('/:id/images/reorder', authenticate, authorize('CREATOR'), validate(reorderImagesSchema), EventController.reorderImages);
+
+/**
+ * @swagger
+ * /events/{id}/images/{imageId}:
+ *   put:
+ *     summary: Update gallery image caption (Creator only)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: path
+ *         name: imageId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               caption:
+ *                 type: string
+ *                 maxLength: 200
+ *     responses:
+ *       200:
+ *         description: Image updated
+ *       403:
+ *         description: Not event creator
+ */
+router.put('/:id/images/:imageId', authenticate, authorize('CREATOR'), validate(updateImageSchema), EventController.updateImage);
 
 /**
  * @swagger

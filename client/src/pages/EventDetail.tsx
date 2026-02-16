@@ -5,7 +5,7 @@ import type { Event, ShareLinks, Comment } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineShare, HiOutlinePencil, HiOutlineTrash, HiOutlineClock, HiOutlineTag, HiOutlineBookmark, HiBookmark, HiOutlineBell, HiOutlineStar, HiStar, HiOutlinePhotograph, HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineX } from 'react-icons/hi';
+import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineShare, HiOutlinePencil, HiOutlineTrash, HiOutlineClock, HiOutlineTag, HiOutlineBookmark, HiBookmark, HiOutlineBell, HiOutlineStar, HiStar, HiOutlinePhotograph, HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineX, HiOutlineInformationCircle } from 'react-icons/hi';
 import { FaTwitter, FaFacebook, FaLinkedin, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
 
 export default function EventDetail() {
@@ -518,6 +518,24 @@ export default function EventDetail() {
               </div>
             )}
           </div>
+
+          {/* Updated Banner */}
+          {event.updatedAt && event.createdAt && (() => {
+            const updated = new Date(event.updatedAt).getTime();
+            const created = new Date(event.createdAt).getTime();
+            const fiveMinutes = 5 * 60 * 1000;
+            if (updated - created > fiveMinutes) {
+              return (
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40">
+                  <HiOutlineInformationCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
+                    This event was updated on {format(new Date(event.updatedAt), 'MMMM d, yyyy')}
+                  </p>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Quick Info - Mobile only */}
           <div className="lg:hidden grid grid-cols-1 sm:grid-cols-3 gap-4">

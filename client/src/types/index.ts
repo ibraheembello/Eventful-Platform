@@ -31,6 +31,7 @@ export interface Event {
   _count?: { tickets: number };
   images?: EventImage[];
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Ticket {

@@ -125,8 +125,12 @@ export class EventController {
 
   static async update(req: Request, res: Response, next: NextFunction) {
     try {
-      const event = await EventService.update(param(req, 'id'), req.user!.userId, req.body);
-      ApiResponse.success(res, event, 'Event updated successfully');
+      const result = await EventService.update(param(req, 'id'), req.user!.userId, req.body);
+      const { notifiedCount, ...event } = result;
+      const message = notifiedCount > 0
+        ? `Event updated! ${notifiedCount} ticket holder(s) will be notified.`
+        : 'Event updated successfully';
+      ApiResponse.success(res, { ...event, notifiedCount }, message);
     } catch (error) {
       next(error);
     }
@@ -135,7 +139,10 @@ export class EventController {
   static async delete(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await EventService.delete(param(req, 'id'), req.user!.userId);
-      ApiResponse.success(res, result, 'Event deleted successfully');
+      const message = result.notifiedCount > 0
+        ? `Event deleted. ${result.notifiedCount} ticket holder(s) will be notified.`
+        : 'Event deleted successfully';
+      ApiResponse.success(res, result, message);
     } catch (error) {
       next(error);
     }
@@ -279,6 +286,33 @@ export class EventController {
     try {
       const images = await EventService.getEventImages(param(req, 'id'));
       ApiResponse.success(res, images);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async reorderImages(req: Request, res: Response, next: NextFunction) {
+    try {
+      const images = await EventService.reorderImages(
+        param(req, 'id'),
+        req.user!.userId,
+        req.body.imageIds,
+      );
+      ApiResponse.success(res, images, 'Images reordered');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateImage(req: Request, res: Response, next: NextFunction) {
+    try {
+      const image = await EventService.updateImage(
+        param(req, 'imageId'),
+        param(req, 'id'),
+        req.user!.userId,
+        req.body.caption,
+      );
+      ApiResponse.success(res, image, 'Image updated');
     } catch (error) {
       next(error);
     }

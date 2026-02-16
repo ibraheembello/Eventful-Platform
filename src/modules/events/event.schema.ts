@@ -41,6 +41,14 @@ export const addEventImageSchema = z.object({
   caption: z.string().max(200).optional(),
 });
 
+export const reorderImagesSchema = z.object({
+  imageIds: z.array(z.string().uuid()).min(1, 'At least one image ID is required'),
+});
+
+export const updateImageSchema = z.object({
+  caption: z.string().max(200).optional().nullable(),
+});
+
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 export type UpdateEventInput = z.infer<typeof updateEventSchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
