@@ -8,7 +8,7 @@ import { NotificationService } from '../notifications/notification.service';
 import { EmailService } from '../../utils/emailService';
 
 export class PaymentService {
-  static async initializePayment(userId: string, eventId: string) {
+  static async initializePayment(userId: string, eventId: string, promoCodeStr?: string) {
     const event = await prisma.event.findUnique({ where: { id: eventId } });
 
     if (!event) {
@@ -40,15 +40,43 @@ export class PaymentService {
       throw ApiError.notFound('User not found');
     }
 
+    // Promo code handling
+    let promoCodeId: string | undefined;
+    let discountAmount = 0;
+    let finalPrice = event.price;
+
+    if (promoCodeStr && event.price > 0) {
+      const promoCode = await prisma.promoCode.findUnique({
+        where: { code_creatorId: { code: promoCodeStr.toUpperCase(), creatorId: event.creatorId } },
+      });
+
+      if (!promoCode) throw ApiError.badRequest('Invalid promo code');
+      if (!promoCode.isActive) throw ApiError.badRequest('This promo code is no longer active');
+      if (promoCode.expiresAt && new Date() > promoCode.expiresAt) throw ApiError.badRequest('This promo code has expired');
+      if (promoCode.maxUses && promoCode.usedCount >= promoCode.maxUses) throw ApiError.badRequest('This promo code has reached its usage limit');
+      if (promoCode.eventId && promoCode.eventId !== eventId) throw ApiError.badRequest('This promo code is not valid for this event');
+
+      if (promoCode.discountType === 'PERCENTAGE') {
+        discountAmount = Math.round(event.price * promoCode.discountValue / 100);
+      } else {
+        discountAmount = Math.min(promoCode.discountValue, event.price);
+      }
+
+      finalPrice = Math.max(0, event.price - discountAmount);
+      promoCodeId = promoCode.id;
+    }
+
     const reference = `EVT-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
 
-    // Free event — bypass Paystack, create ticket directly
-    if (event.price === 0) {
+    // Free event or fully discounted — bypass Paystack, create ticket directly
+    if (finalPrice === 0) {
       const payment = await prisma.payment.create({
         data: {
           userId,
           eventId,
           amount: 0,
+          discountAmount,
+          promoCodeId,
           paystackReference: reference,
           paystackAccessCode: 'free',
           paystackAuthUrl: 'free',
@@ -56,6 +84,11 @@ export class PaymentService {
           paidAt: new Date(),
         },
       });
+
+      // Increment promo code usage
+      if (promoCodeId) {
+        await prisma.promoCode.update({ where: { id: promoCodeId }, data: { usedCount: { increment: 1 } } });
+      }
 
       const ticket = await TicketService.createTicket(userId, eventId, payment.id);
 
@@ -79,13 +112,15 @@ export class PaymentService {
       },
       body: JSON.stringify({
         email: user.email,
-        amount: Math.round(event.price * 100), // Paystack uses kobo
+        amount: Math.round(finalPrice * 100), // Paystack uses kobo
         reference,
         callback_url: `${process.env.CLIENT_URL || 'http://localhost:5173'}/payment/callback?reference=${reference}`,
         metadata: {
           userId,
           eventId,
           eventTitle: event.title,
+          promoCodeId,
+          discountAmount,
         },
       }),
     });
@@ -102,7 +137,9 @@ export class PaymentService {
       data: {
         userId,
         eventId,
-        amount: event.price,
+        amount: finalPrice,
+        discountAmount,
+        promoCodeId,
         paystackReference: reference,
         paystackAccessCode: data.data.access_code,
         paystackAuthUrl: data.data.authorization_url,
@@ -166,6 +203,11 @@ export class PaymentService {
       payment.eventId,
       payment.id
     );
+
+    // Increment promo code usage on successful payment
+    if (payment.promoCodeId) {
+      await prisma.promoCode.update({ where: { id: payment.promoCodeId }, data: { usedCount: { increment: 1 } } });
+    }
 
     // Auto-create default reminder if event has one
     const event = await prisma.event.findUnique({ where: { id: payment.eventId } });
