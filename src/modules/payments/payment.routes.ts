@@ -12,7 +12,7 @@ const router = Router();
  * @swagger
  * /payments/initialize:
  *   post:
- *     summary: Initialize a payment for an event (Eventee only)
+ *     summary: Initialize a payment for an event
  *     tags: [Payments]
  *     security:
  *       - bearerAuth: []
@@ -58,7 +58,7 @@ const router = Router();
 router.post(
   '/initialize',
   authenticate,
-  authorize('EVENTEE'),
+  authorize('EVENTEE', 'CREATOR'),
   paymentLimiter,
   validate(initializePaymentSchema),
   PaymentController.initializePayment
