@@ -6,6 +6,7 @@ coverage/
 .DS_Store
 *.zip
 uploads/
+CLAUDE.md
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
