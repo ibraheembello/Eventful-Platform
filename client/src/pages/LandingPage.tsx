@@ -18,7 +18,7 @@ import { format } from 'date-fns';
 
 /* ─── Scroll Reveal Hook ─── */
 
-function useScrollReveal() {
+function useScrollReveal(deps: unknown[] = []) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,16 +34,17 @@ function useScrollReveal() {
           }
         });
       },
-      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+      { threshold: 0.08, rootMargin: '0px 0px -20px 0px' }
     );
 
     // Observe the container itself and all .reveal children
-    const children = el.querySelectorAll('.reveal');
+    const children = el.querySelectorAll('.reveal:not(.visible)');
     children.forEach((child) => observer.observe(child));
-    if (el.classList.contains('reveal')) observer.observe(el);
+    if (el.classList.contains('reveal') && !el.classList.contains('visible')) observer.observe(el);
 
     return () => observer.disconnect();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
 
   return ref;
 }
@@ -548,7 +549,7 @@ export default function LandingPage() {
   const showcase3Ref = useScrollReveal();
   const showcase4Ref = useScrollReveal();
   const featuresGridRef = useScrollReveal();
-  const featuredEventsRef = useScrollReveal();
+  const featuredEventsRef = useScrollReveal([featuredEvents.length]);
   const testimonialsRef = useScrollReveal();
   const aboutRef = useScrollReveal();
   const howItWorksRef = useScrollReveal();
@@ -932,7 +933,7 @@ export default function LandingPage() {
               A complete toolkit for event creators and attendees, built with modern tools that just work.
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="reveal grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 icon: <HiOutlineQrcode className="w-6 h-6" />,
@@ -1030,10 +1031,10 @@ export default function LandingPage() {
                 description: 'Share events on Twitter, Facebook, LinkedIn, and WhatsApp.',
                 color: 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400',
               },
-            ].map((feature, i) => (
+            ].map((feature) => (
               <div
                 key={feature.title}
-                className={`reveal reveal-delay-${(i % 4) + 1} glass border border-[rgb(var(--border-primary))] rounded-2xl p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300`}
+                className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
               >
                 <div className={`w-12 h-12 rounded-xl ${feature.color} flex items-center justify-center mb-4`}>
                   {feature.icon}
