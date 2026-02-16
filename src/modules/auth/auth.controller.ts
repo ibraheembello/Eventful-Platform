@@ -39,6 +39,24 @@ export class AuthController {
     }
   }
 
+  static async googleLogin(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await AuthService.googleLogin(req.body);
+      ApiResponse.success(res, result, 'Google login successful');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async githubLogin(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await AuthService.githubLogin(req.body);
+      ApiResponse.success(res, result, 'GitHub login successful');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async refreshToken(req: Request, res: Response, next: NextFunction) {
     try {
       const { refreshToken } = req.body;

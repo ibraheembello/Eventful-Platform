@@ -2,11 +2,15 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 import { HiOutlineMoon, HiOutlineSun, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
+import { FaGithub } from 'react-icons/fa';
+
+const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || '';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, socialLogin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
@@ -25,6 +29,30 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    if (!credentialResponse.credential) {
+      toast.error('Google sign-in failed');
+      return;
+    }
+    setLoading(true);
+    try {
+      await socialLogin('google', { credential: credentialResponse.credential });
+      toast.success('Welcome back!');
+      navigate('/events');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Google sign-in failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGitHubLogin = () => {
+    // No role stored from Login page — existing users only
+    sessionStorage.removeItem('github_oauth_role');
+    const redirectUri = `${window.location.origin}/auth/github/callback`;
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
   };
 
   return (
@@ -90,6 +118,41 @@ export default function Login() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+          {/* Social Login Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[rgb(var(--border-primary))]" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-tertiary))]">or continue with</span>
+            </div>
+          </div>
+
+          {/* Social Buttons */}
+          <div className="space-y-3">
+            <div className="flex justify-center [&>div]:!w-full">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => toast.error('Google sign-in failed')}
+                width="100%"
+                text="signin_with"
+                shape="rectangular"
+                theme={theme === 'dark' ? 'filled_black' : 'outline'}
+              />
+            </div>
+            {GITHUB_CLIENT_ID && (
+              <button
+                type="button"
+                onClick={handleGitHubLogin}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[rgb(var(--border-primary))] rounded-lg font-medium hover:bg-[rgb(var(--bg-secondary))] disabled:opacity-50 transition text-[rgb(var(--text-primary))]"
+              >
+                <FaGithub className="w-5 h-5" />
+                Sign in with GitHub
+              </button>
+            )}
+          </div>
 
           <p className="mt-6 text-center text-sm text-[rgb(var(--text-secondary))]">
             Don't have an account? <Link to="/register" className="text-emerald-600 dark:text-emerald-400 font-medium hover:underline">Register</Link>

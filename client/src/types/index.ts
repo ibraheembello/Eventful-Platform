@@ -5,6 +5,7 @@ export interface User {
   lastName: string;
   role: 'CREATOR' | 'EVENTEE';
   profileImage?: string;
+  provider?: string;
   createdAt: string;
 }
 

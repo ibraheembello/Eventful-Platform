@@ -2,11 +2,15 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 import { HiOutlineMoon, HiOutlineSun, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
+import { FaGithub } from 'react-icons/fa';
+
+const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || '';
 
 export default function Register() {
-  const { register } = useAuth();
+  const { register, socialLogin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -33,6 +37,30 @@ export default function Register() {
     }
   };
 
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    if (!credentialResponse.credential) {
+      toast.error('Google sign-in failed');
+      return;
+    }
+    setLoading(true);
+    try {
+      await socialLogin('google', { credential: credentialResponse.credential, role: form.role });
+      toast.success('Account created successfully!');
+      navigate('/events');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Google sign-up failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGitHubRegister = () => {
+    // Store role in sessionStorage for the callback to pick up
+    sessionStorage.setItem('github_oauth_role', form.role);
+    const redirectUri = `${window.location.origin}/auth/github/callback`;
+    window.location.href = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[rgb(var(--bg-secondary))] transition-colors duration-200 px-4">
       <div className="absolute top-4 right-4">
@@ -54,6 +82,70 @@ export default function Register() {
         <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-8">
           <h1 className="text-2xl font-bold text-[rgb(var(--text-primary))] mb-1">Create an account</h1>
           <p className="text-[rgb(var(--text-secondary))] mb-6">Join Eventful to discover and create events</p>
+
+          {/* Role Selector — needed for both form and social sign-up */}
+          <div className="mb-5">
+            <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">I want to</label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, role: 'EVENTEE' })}
+                className={`px-4 py-2.5 rounded-lg border text-sm font-medium transition ${
+                  form.role === 'EVENTEE'
+                    ? 'border-emerald-600 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                    : 'border-[rgb(var(--border-primary))] text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))]'
+                }`}
+              >
+                Attend Events
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, role: 'CREATOR' })}
+                className={`px-4 py-2.5 rounded-lg border text-sm font-medium transition ${
+                  form.role === 'CREATOR'
+                    ? 'border-emerald-600 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                    : 'border-[rgb(var(--border-primary))] text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))]'
+                }`}
+              >
+                Create Events
+              </button>
+            </div>
+          </div>
+
+          {/* Social Sign-Up */}
+          <div className="space-y-3 mb-6">
+            <div className="flex justify-center [&>div]:!w-full">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => toast.error('Google sign-up failed')}
+                width="100%"
+                text="signup_with"
+                shape="rectangular"
+                theme={theme === 'dark' ? 'filled_black' : 'outline'}
+              />
+            </div>
+            {GITHUB_CLIENT_ID && (
+              <button
+                type="button"
+                onClick={handleGitHubRegister}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[rgb(var(--border-primary))] rounded-lg font-medium hover:bg-[rgb(var(--bg-secondary))] disabled:opacity-50 transition text-[rgb(var(--text-primary))]"
+              >
+                <FaGithub className="w-5 h-5" />
+                Sign up with GitHub
+              </button>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[rgb(var(--border-primary))]" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-tertiary))]">or register with email</span>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
@@ -110,33 +202,6 @@ export default function Register() {
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <HiOutlineEyeOff className="w-5 h-5" /> : <HiOutlineEye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">I want to</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, role: 'EVENTEE' })}
-                  className={`px-4 py-2.5 rounded-lg border text-sm font-medium transition ${
-                    form.role === 'EVENTEE'
-                      ? 'border-emerald-600 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                      : 'border-[rgb(var(--border-primary))] text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))]'
-                  }`}
-                >
-                  Attend Events
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, role: 'CREATOR' })}
-                  className={`px-4 py-2.5 rounded-lg border text-sm font-medium transition ${
-                    form.role === 'CREATOR'
-                      ? 'border-emerald-600 dark:border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                      : 'border-[rgb(var(--border-primary))] text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))]'
-                  }`}
-                >
-                  Create Events
                 </button>
               </div>
             </div>

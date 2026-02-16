@@ -1037,6 +1037,12 @@ export default function LandingPage() {
                 description: 'Share events on Twitter, Facebook, LinkedIn, and WhatsApp.',
                 color: 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400',
               },
+              {
+                icon: <HiOutlineUserGroup className="w-6 h-6" />,
+                title: 'Social Sign-In',
+                description: 'Sign in instantly with Google or GitHub. No passwords to remember.',
+                color: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400',
+              },
             ].map((feature) => (
               <div
                 key={feature.title}
@@ -1439,6 +1445,7 @@ export default function LandingPage() {
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Analytics Dashboard</span>
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Waitlist System</span>
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Promo Codes & Discounts</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Social Sign-In (Google & GitHub)</span>
               </div>
             </div>
             {/* Resources */}

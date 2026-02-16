@@ -21,6 +21,7 @@ import SavedEvents from './pages/SavedEvents';
 import AttendeeList from './pages/AttendeeList';
 import PromoCodes from './pages/PromoCodes';
 import MyWaitlists from './pages/MyWaitlists';
+import GitHubCallback from './pages/GitHubCallback';
 
 function HomeRoute() {
   return <LandingPage />;
@@ -36,6 +37,7 @@ function App() {
           <Route path="/" element={<HomeRoute />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/auth/github/callback" element={<GitHubCallback />} />
 
           <Route element={<Layout />}>
             <Route path="/events" element={<ErrorBoundary><Events /></ErrorBoundary>} />
