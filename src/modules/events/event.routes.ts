@@ -202,7 +202,7 @@ router.get('/my-events', authenticate, authorize('CREATOR'), EventController.get
  *       200:
  *         description: Events user is attending
  */
-router.get('/attending', authenticate, authorize('EVENTEE'), EventController.getEventeeEvents);
+router.get('/attending', authenticate, authorize('EVENTEE', 'CREATOR'), EventController.getEventeeEvents);
 
 /**
  * @swagger

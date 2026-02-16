@@ -15,6 +15,11 @@ export class PaymentService {
       throw ApiError.notFound('Event not found');
     }
 
+    // Creators cannot buy tickets for their own events
+    if (event.creatorId === userId) {
+      throw ApiError.badRequest('You cannot purchase a ticket for your own event');
+    }
+
     // Check capacity
     const ticketCount = await prisma.ticket.count({ where: { eventId } });
     if (ticketCount >= event.capacity) {
