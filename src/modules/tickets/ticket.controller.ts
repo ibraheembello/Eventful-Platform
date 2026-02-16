@@ -34,4 +34,13 @@ export class TicketController {
       next(error);
     }
   }
+
+  static async cancelTicket(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await TicketService.cancelTicket(param(req, 'id'), req.user!.userId);
+      ApiResponse.success(res, result, 'Ticket cancelled successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }

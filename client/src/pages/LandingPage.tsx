@@ -9,7 +9,7 @@ import {
   HiOutlineBookmark, HiOutlineClipboardList, HiOutlineDocumentDownload,
   HiOutlineUserGroup, HiOutlineCheck, HiOutlineStar, HiOutlineMenu, HiOutlineX,
   HiOutlineSearch, HiOutlineChatAlt2, HiOutlineMail, HiOutlinePhotograph,
-  HiOutlineTag, HiOutlineSwitchHorizontal,
+  HiOutlineTag, HiOutlineSwitchHorizontal, HiOutlineClock,
 } from 'react-icons/hi';
 import api from '../lib/api';
 import type { Event } from '../types';
@@ -732,10 +732,16 @@ export default function LandingPage() {
                 color: 'bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400',
               },
               {
-                icon: <HiOutlineBell className="w-6 h-6" />,
-                title: 'Waitlist & Reminders',
-                description: 'Join waitlists for sold-out events and get automatic reminders.',
+                icon: <HiOutlineClock className="w-6 h-6" />,
+                title: 'Waitlist System',
+                description: 'Join the waitlist for sold-out events and get notified instantly when a spot opens up.',
                 color: 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400',
+              },
+              {
+                icon: <HiOutlineBell className="w-6 h-6" />,
+                title: 'Smart Reminders',
+                description: 'Set reminders for upcoming events so you never miss a moment.',
+                color: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400',
               },
               {
                 icon: <HiOutlineDocumentDownload className="w-6 h-6" />,
@@ -1025,8 +1031,8 @@ export default function LandingPage() {
               <div className="space-y-2.5">
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">QR Code Tickets</span>
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Analytics Dashboard</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Waitlist System</span>
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Promo Codes & Discounts</span>
-                <span className="block text-sm text-[rgb(var(--text-secondary))]">Comments & Reviews</span>
               </div>
             </div>
             {/* Resources */}

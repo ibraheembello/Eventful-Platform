@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { HiTicket, HiDownload, HiQrcode, HiCheckCircle, HiXCircle } from 'react-icons/hi';
+import { HiTicket, HiDownload, HiQrcode, HiCheckCircle, HiXCircle, HiOutlineBan } from 'react-icons/hi';
 import { format } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
 import QRCode from 'qrcode';
@@ -14,6 +14,7 @@ export default function MyTickets() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTickets();
@@ -34,6 +35,20 @@ export default function MyTickets() {
       toast.error(error.response?.data?.message || 'Failed to load tickets');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelTicket = async (ticketId: string) => {
+    if (!window.confirm('Are you sure you want to cancel this ticket? This action cannot be undone.')) return;
+    setCancellingId(ticketId);
+    try {
+      await api.put(`/tickets/${ticketId}/cancel`);
+      toast.success('Ticket cancelled successfully');
+      fetchTickets();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to cancel ticket');
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -235,6 +250,16 @@ export default function MyTickets() {
                     >
                       <HiDownload className="w-4 h-4" />
                     </button>
+                    {ticket.status === 'ACTIVE' && (
+                      <button
+                        onClick={() => handleCancelTicket(ticket.id)}
+                        disabled={cancellingId === ticket.id}
+                        aria-label="Cancel ticket"
+                        className="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition disabled:opacity-50"
+                      >
+                        <HiOutlineBan className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

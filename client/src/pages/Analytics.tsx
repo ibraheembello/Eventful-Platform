@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { HiChartBar, HiTicket, HiUsers, HiCurrencyDollar, HiCalendar, HiOutlineArrowSmRight } from 'react-icons/hi';
+import { HiChartBar, HiTicket, HiUsers, HiCurrencyDollar, HiCalendar, HiOutlineArrowSmRight, HiOutlineClock } from 'react-icons/hi';
 import { format } from 'date-fns';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -19,6 +19,8 @@ interface AnalyticsOverview {
     used: number;
     cancelled: number;
   };
+  totalWaitlistEntries?: number;
+  eventsWithWaitlists?: number;
 }
 
 interface EventAnalytics {
@@ -144,7 +146,7 @@ export default function Analytics() {
 
       {/* Overview Cards */}
       {overview && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-5">
             <div className="flex items-center justify-between">
               <div>
@@ -189,6 +191,21 @@ export default function Analytics() {
               </div>
               <div className="p-2.5 bg-purple-100 dark:bg-purple-900/40 rounded-xl">
                 <HiUsers className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
+          </div>
+
+          <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-[rgb(var(--text-tertiary))] uppercase tracking-wide mb-1">Waitlisted</p>
+                <p className="text-2xl lg:text-3xl font-bold text-[rgb(var(--text-primary))]">{overview.totalWaitlistEntries || 0}</p>
+                {(overview.eventsWithWaitlists || 0) > 0 && (
+                  <p className="text-xs text-[rgb(var(--text-tertiary))] mt-0.5">{overview.eventsWithWaitlists} event{overview.eventsWithWaitlists !== 1 ? 's' : ''}</p>
+                )}
+              </div>
+              <div className="p-2.5 bg-orange-100 dark:bg-orange-900/40 rounded-xl">
+                <HiOutlineClock className="w-6 h-6 text-orange-600 dark:text-orange-400" />
               </div>
             </div>
           </div>
