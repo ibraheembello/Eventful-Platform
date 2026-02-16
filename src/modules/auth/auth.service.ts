@@ -130,22 +130,43 @@ export class AuthService {
   }
 
   static async googleLogin(input: GoogleAuthInput) {
-    let payload;
+    let googleId: string;
+    let email: string;
+    let given_name: string | undefined;
+    let family_name: string | undefined;
+    let picture: string | undefined;
+
+    // Try as ID token first, then as access token
     try {
       const ticket = await googleClient.verifyIdToken({
         idToken: input.credential,
         audience: process.env.GOOGLE_CLIENT_ID,
       });
-      payload = ticket.getPayload();
+      const payload = ticket.getPayload();
+      if (!payload || !payload.email) throw new Error('No payload');
+      googleId = payload.sub;
+      email = payload.email;
+      given_name = payload.given_name;
+      family_name = payload.family_name;
+      picture = payload.picture;
     } catch {
-      throw ApiError.unauthorized('Invalid Google credential');
+      // Credential might be an access token from implicit flow — call userinfo
+      try {
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${input.credential}` },
+        });
+        if (!res.ok) throw new Error('userinfo failed');
+        const info = await res.json() as { sub: string; email?: string; given_name?: string; family_name?: string; picture?: string };
+        if (!info.email) throw new Error('No email');
+        googleId = info.sub;
+        email = info.email;
+        given_name = info.given_name;
+        family_name = info.family_name;
+        picture = info.picture;
+      } catch {
+        throw ApiError.unauthorized('Invalid Google credential');
+      }
     }
-
-    if (!payload || !payload.email) {
-      throw ApiError.unauthorized('Could not retrieve email from Google');
-    }
-
-    const { sub: googleId, email, given_name, family_name, picture } = payload;
 
     // Try to find existing user by googleId or email
     let user = await prisma.user.findFirst({
