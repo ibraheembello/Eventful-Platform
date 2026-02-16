@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { GoogleLogin } from '@react-oauth/google';
+import { useGoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 import { HiOutlineMoon, HiOutlineSun, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
+import { FcGoogle } from 'react-icons/fc';
 import { FaGithub } from 'react-icons/fa';
 
 const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || '';
@@ -31,25 +32,26 @@ export default function Login() {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: any) => {
-    if (!credentialResponse.credential) {
-      toast.error('Google sign-in failed');
-      return;
-    }
-    setLoading(true);
-    try {
-      await socialLogin('google', { credential: credentialResponse.credential });
-      toast.success('Welcome back!');
-      navigate('/events');
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Google sign-in failed');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const googleLogin = useGoogleLogin({
+    flow: 'implicit',
+    onSuccess: async (tokenResponse) => {
+      setLoading(true);
+      try {
+        // Exchange the access token for an ID token via Google's userinfo endpoint
+        // then send the access_token to our backend which will verify via Google API
+        await socialLogin('google', { credential: tokenResponse.access_token });
+        toast.success('Welcome back!');
+        navigate('/events');
+      } catch (err: any) {
+        toast.error(err.response?.data?.message || 'Google sign-in failed');
+      } finally {
+        setLoading(false);
+      }
+    },
+    onError: () => toast.error('Google sign-in failed'),
+  });
 
   const handleGitHubLogin = () => {
-    // No role stored from Login page — existing users only
     sessionStorage.removeItem('github_oauth_role');
     const redirectUri = `${window.location.origin}/auth/github/callback`;
     window.location.href = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
@@ -131,16 +133,15 @@ export default function Login() {
 
           {/* Social Buttons */}
           <div className="space-y-3">
-            <div className="flex justify-center [&>div]:!w-full">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => toast.error('Google sign-in failed')}
-                width="100%"
-                text="signin_with"
-                shape="rectangular"
-                theme={theme === 'dark' ? 'filled_black' : 'outline'}
-              />
-            </div>
+            <button
+              type="button"
+              onClick={() => googleLogin()}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[rgb(var(--border-primary))] rounded-lg font-medium hover:bg-[rgb(var(--bg-secondary))] disabled:opacity-50 transition text-[rgb(var(--text-primary))]"
+            >
+              <FcGoogle className="w-5 h-5" />
+              Sign in with Google
+            </button>
             {GITHUB_CLIENT_ID && (
               <button
                 type="button"
