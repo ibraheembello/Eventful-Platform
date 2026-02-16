@@ -18,6 +18,7 @@ import paymentRoutes from './modules/payments/payment.routes';
 import notificationRoutes from './modules/notifications/notification.routes';
 import analyticsRoutes from './modules/analytics/analytics.routes';
 import uploadRoutes from './modules/upload/upload.routes';
+import promoCodeRoutes from './modules/promoCodes/promo-code.routes';
 
 dotenv.config();
 
@@ -57,6 +58,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/promo-codes', promoCodeRoutes);
 
 // Serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));

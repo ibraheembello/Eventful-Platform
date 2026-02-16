@@ -9,6 +9,7 @@ import {
   HiOutlineBookmark, HiOutlineClipboardList, HiOutlineDocumentDownload,
   HiOutlineUserGroup, HiOutlineCheck, HiOutlineStar, HiOutlineMenu, HiOutlineX,
   HiOutlineSearch, HiOutlineChatAlt2, HiOutlineMail, HiOutlinePhotograph,
+  HiOutlineTag, HiOutlineSwitchHorizontal,
 } from 'react-icons/hi';
 import api from '../lib/api';
 import type { Event } from '../types';
@@ -766,6 +767,18 @@ export default function LandingPage() {
                 description: 'Multi-image galleries with lightbox viewer for every event.',
                 color: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400',
               },
+              {
+                icon: <HiOutlineTag className="w-6 h-6" />,
+                title: 'Promo Codes & Discounts',
+                description: 'Create discount codes to boost sales and reward early attendees.',
+                color: 'bg-lime-100 dark:bg-lime-900/40 text-lime-600 dark:text-lime-400',
+              },
+              {
+                icon: <HiOutlineSwitchHorizontal className="w-6 h-6" />,
+                title: 'Creator + Attendee',
+                description: 'Creators can attend other creators\' events without a separate account.',
+                color: 'bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400',
+              },
             ].map((feature) => (
               <div
                 key={feature.title}
@@ -1012,7 +1025,7 @@ export default function LandingPage() {
               <div className="space-y-2.5">
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">QR Code Tickets</span>
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Analytics Dashboard</span>
-                <span className="block text-sm text-[rgb(var(--text-secondary))]">Email Notifications</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Promo Codes & Discounts</span>
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Comments & Reviews</span>
               </div>
             </div>

@@ -106,6 +106,20 @@ export interface Comment {
   createdAt: string;
 }
 
+export interface PromoCode {
+  id: string;
+  code: string;
+  discountType: 'PERCENTAGE' | 'FIXED';
+  discountValue: number;
+  isActive: boolean;
+  maxUses?: number;
+  usedCount: number;
+  expiresAt?: string;
+  eventId?: string;
+  event?: { id: string; title: string };
+  createdAt: string;
+}
+
 export interface WaitlistEntry {
   id: string;
   position: number;

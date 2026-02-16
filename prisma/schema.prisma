@@ -31,6 +31,11 @@ enum ReminderUnit {
   WEEKS
 }
 
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
 model User {
   id            String         @id @default(uuid())
   email         String         @unique
@@ -49,6 +54,7 @@ model User {
   bookmarks     Bookmark[]
   comments      Comment[]
   waitlists     Waitlist[]
+  promoCodes    PromoCode[]  @relation("CreatorPromoCodes")
 
   @@map("users")
 }
@@ -78,6 +84,7 @@ model Event {
   comments            Comment[]
   waitlists           Waitlist[]
   images              EventImage[]
+  promoCodes          PromoCode[]
 
   @@map("events")
 }
@@ -106,6 +113,7 @@ model Ticket {
 model Payment {
   id                String        @id @default(uuid())
   amount            Float
+  discountAmount    Float         @default(0)
   status            PaymentStatus @default(PENDING)
   paystackReference String        @unique
   paystackAccessCode String?
@@ -119,6 +127,9 @@ model Payment {
 
   eventId           String
   event             Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  promoCodeId       String?
+  promoCode         PromoCode?    @relation(fields: [promoCodeId], references: [id])
 
   ticket            Ticket?
 
@@ -203,4 +214,28 @@ model EventImage {
   event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   @@map("event_images")
+}
+
+model PromoCode {
+  id            String       @id @default(uuid())
+  code          String
+  discountType  DiscountType
+  discountValue Float
+  isActive      Boolean      @default(true)
+  maxUses       Int?
+  usedCount     Int          @default(0)
+  expiresAt     DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  creatorId     String
+  creator       User         @relation("CreatorPromoCodes", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  eventId       String?
+  event         Event?       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  payments      Payment[]
+
+  @@unique([code, creatorId])
+  @@map("promo_codes")
 }

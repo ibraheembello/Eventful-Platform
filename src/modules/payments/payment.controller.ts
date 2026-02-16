@@ -6,7 +6,7 @@ import { param } from '../../utils/param';
 export class PaymentController {
   static async initializePayment(req: Request, res: Response, next: NextFunction) {
     try {
-      const result = await PaymentService.initializePayment(req.user!.userId, req.body.eventId);
+      const result = await PaymentService.initializePayment(req.user!.userId, req.body.eventId, req.body.promoCode);
       ApiResponse.success(res, result, 'Payment initialized');
     } catch (error) {
       next(error);

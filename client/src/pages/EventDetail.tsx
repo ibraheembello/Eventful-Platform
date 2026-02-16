@@ -32,6 +32,16 @@ export default function EventDetail() {
   const [hasTicket, setHasTicket] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [showPromoInput, setShowPromoInput] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoApplying, setPromoApplying] = useState(false);
+  const [promoDiscount, setPromoDiscount] = useState<{
+    discountType: string;
+    discountValue: number;
+    discountAmount: number;
+    originalPrice: number;
+    finalPrice: number;
+  } | null>(null);
 
   useEffect(() => {
     api.get(`/events/${id}`)
@@ -85,7 +95,9 @@ export default function EventDetail() {
     if (!user) { navigate('/login'); return; }
     setPaying(true);
     try {
-      const res = await api.post('/payments/initialize', { eventId: id });
+      const body: any = { eventId: id };
+      if (promoDiscount && promoCode) body.promoCode = promoCode;
+      const res = await api.post('/payments/initialize', body);
       if (res.data.data.free) {
         toast.success('Ticket claimed successfully!');
         navigate('/tickets');
@@ -97,6 +109,27 @@ export default function EventDetail() {
     } finally {
       setPaying(false);
     }
+  };
+
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoApplying(true);
+    try {
+      const res = await api.post('/promo-codes/validate', { code: promoCode.trim(), eventId: id });
+      setPromoDiscount(res.data.data);
+      toast.success('Promo code applied!');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Invalid promo code');
+      setPromoDiscount(null);
+    } finally {
+      setPromoApplying(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setPromoCode('');
+    setPromoDiscount(null);
+    setShowPromoInput(false);
   };
 
   const handleBookmark = async () => {
@@ -525,15 +558,32 @@ export default function EventDetail() {
                   <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wide mb-1">
                     Ticket Price
                   </p>
-                  <p className="text-3xl font-bold text-[rgb(var(--text-primary))]">
-                    {event.price > 0 ? (
-                      <>
-                        <span className="text-lg">NGN</span> {event.price.toLocaleString()}
-                      </>
-                    ) : (
-                      'Free'
-                    )}
-                  </p>
+                  {promoDiscount ? (
+                    <div>
+                      <p className="text-lg text-[rgb(var(--text-tertiary))] line-through">
+                        NGN {promoDiscount.originalPrice.toLocaleString()}
+                      </p>
+                      <p className="text-3xl font-bold text-[rgb(var(--text-primary))]">
+                        {promoDiscount.finalPrice > 0 ? (
+                          <>
+                            <span className="text-lg">NGN</span> {promoDiscount.finalPrice.toLocaleString()}
+                          </>
+                        ) : (
+                          'Free'
+                        )}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-3xl font-bold text-[rgb(var(--text-primary))]">
+                      {event.price > 0 ? (
+                        <>
+                          <span className="text-lg">NGN</span> {event.price.toLocaleString()}
+                        </>
+                      ) : (
+                        'Free'
+                      )}
+                    </p>
+                  )}
                   {!soldOut && availableTickets > 0 && availableTickets <= 10 && (
                     <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
                       Only {availableTickets} tickets left!
@@ -592,6 +642,67 @@ export default function EventDetail() {
                   </button>
                 )}
               </div>
+
+              {/* Promo Code Section */}
+              {event.price > 0 && !soldOut && (
+                <div className="mt-4 pt-4 border-t border-emerald-200 dark:border-emerald-800/40">
+                  {promoDiscount ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-sm font-medium">
+                          <HiOutlineTag className="w-4 h-4" />
+                          {promoCode.toUpperCase()} &mdash;{' '}
+                          {promoDiscount.discountType === 'PERCENTAGE'
+                            ? `${promoDiscount.discountValue}% off`
+                            : `NGN ${promoDiscount.discountAmount.toLocaleString()} off`}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemovePromo}
+                        className="text-xs text-red-500 hover:text-red-600 font-medium"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : showPromoInput ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                        placeholder="Enter promo code"
+                        className="flex-1 px-4 py-2.5 border border-[rgb(var(--border-primary))] rounded-xl bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] placeholder-[rgb(var(--text-tertiary))] focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none uppercase tracking-wider font-mono text-sm"
+                        onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyPromo}
+                        disabled={promoApplying || !promoCode.trim()}
+                        className="px-5 py-2.5 bg-emerald-600 text-white text-sm font-medium rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {promoApplying ? 'Checking...' : 'Apply'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowPromoInput(false); setPromoCode(''); }}
+                        className="px-3 py-2.5 text-[rgb(var(--text-tertiary))] hover:text-[rgb(var(--text-primary))] transition-colors"
+                      >
+                        <HiOutlineX className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowPromoInput(true)}
+                      className="text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium flex items-center gap-1.5"
+                    >
+                      <HiOutlineTag className="w-4 h-4" />
+                      Have a promo code?
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

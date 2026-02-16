@@ -18,6 +18,7 @@ import LandingPage from './pages/LandingPage';
 import Profile from './pages/Profile';
 import SavedEvents from './pages/SavedEvents';
 import AttendeeList from './pages/AttendeeList';
+import PromoCodes from './pages/PromoCodes';
 
 function HomeRoute() {
   return <LandingPage />;
@@ -45,6 +46,7 @@ function App() {
             <Route path="/events/create" element={<ProtectedRoute roles={['CREATOR']}><CreateEvent /></ProtectedRoute>} />
             <Route path="/events/:id/edit" element={<ProtectedRoute roles={['CREATOR']}><CreateEvent /></ProtectedRoute>} />
             <Route path="/events/:id/attendees" element={<ProtectedRoute roles={['CREATOR']}><AttendeeList /></ProtectedRoute>} />
+            <Route path="/promo-codes" element={<ProtectedRoute roles={['CREATOR']}><PromoCodes /></ProtectedRoute>} />
             <Route path="/saved" element={<ProtectedRoute><SavedEvents /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute roles={['CREATOR']}><Analytics /></ProtectedRoute>} />
