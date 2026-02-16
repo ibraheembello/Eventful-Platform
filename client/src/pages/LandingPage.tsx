@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -10,10 +10,87 @@ import {
   HiOutlineUserGroup, HiOutlineCheck, HiOutlineStar, HiOutlineMenu, HiOutlineX,
   HiOutlineSearch, HiOutlineChatAlt2, HiOutlineMail, HiOutlinePhotograph,
   HiOutlineTag, HiOutlineSwitchHorizontal, HiOutlineClock,
+  HiOutlineGlobeAlt, HiOutlineLightBulb, HiOutlineHeart,
 } from 'react-icons/hi';
 import api from '../lib/api';
 import type { Event } from '../types';
 import { format } from 'date-fns';
+
+/* ─── Scroll Reveal Hook ─── */
+
+function useScrollReveal() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+
+    // Observe the container itself and all .reveal children
+    const children = el.querySelectorAll('.reveal');
+    children.forEach((child) => observer.observe(child));
+    if (el.classList.contains('reveal')) observer.observe(el);
+
+    return () => observer.disconnect();
+  }, []);
+
+  return ref;
+}
+
+/* ─── Animated Counter Hook ─── */
+
+function useCountUp(target: number, duration = 1500) {
+  const [count, setCount] = useState(0);
+  const [started, setStarted] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started) {
+          setStarted(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [started]);
+
+  useEffect(() => {
+    if (!started) return;
+    const steps = 40;
+    const increment = target / steps;
+    const stepDuration = duration / steps;
+    let current = 0;
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= target) {
+        setCount(target);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, stepDuration);
+    return () => clearInterval(timer);
+  }, [started, target, duration]);
+
+  return { count, ref };
+}
 
 /* ─── CSS Mockup Components ─── */
 
@@ -244,7 +321,7 @@ function TicketMockup() {
                     const row = Math.floor(i / 9);
                     const col = i % 9;
                     const isCorner = (row < 3 && col < 3) || (row < 3 && col > 5) || (row > 5 && col < 3);
-                    const isFilled = isCorner || Math.random() > 0.5;
+                    const isFilled = isCorner || (i * 7 + 3) % 3 === 0;
                     return (
                       <div
                         key={i}
@@ -361,6 +438,91 @@ function AttendeeTableMockup() {
   );
 }
 
+function WaitlistMockup() {
+  return (
+    <div className="relative mx-auto w-[280px] sm:w-[300px]">
+      <div className="relative rounded-[2.5rem] border-[8px] border-gray-800 dark:border-gray-700 bg-gray-900 shadow-2xl overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-gray-800 dark:bg-gray-700 rounded-b-2xl z-10" />
+        <div className="bg-gray-50 dark:bg-slate-900 pt-8 pb-4 px-3 min-h-[480px]">
+          {/* Status bar */}
+          <div className="flex justify-between items-center px-2 mb-4">
+            <span className="text-[10px] font-semibold text-gray-800 dark:text-gray-200">9:41</span>
+            <div className="flex gap-1">
+              <div className="w-3.5 h-2 rounded-sm bg-gray-800 dark:bg-gray-200" />
+              <div className="w-3.5 h-2 rounded-sm bg-gray-800 dark:bg-gray-200" />
+            </div>
+          </div>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-sm font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Eventful</span>
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[8px] font-bold">IB</div>
+          </div>
+
+          {/* Sold out event card */}
+          <div className="mb-3 rounded-xl overflow-hidden bg-white dark:bg-slate-800 shadow-sm border border-gray-100 dark:border-slate-700">
+            <div className="h-24 bg-gradient-to-br from-amber-500 to-orange-600 relative">
+              <span className="absolute top-2 left-2 text-[8px] bg-white/20 backdrop-blur-sm text-white px-2 py-0.5 rounded-full">Music</span>
+              <div className="absolute top-2 right-2 bg-red-500 text-white text-[8px] px-2 py-0.5 rounded-full font-bold">SOLD OUT</div>
+              <span className="absolute bottom-2 right-2 text-white text-[24px] font-bold opacity-20">A</span>
+            </div>
+            <div className="p-3">
+              <p className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 mb-1">Afro Beats Live Concert</p>
+              <div className="flex items-center gap-1 mb-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                </div>
+                <span className="text-[9px] text-gray-500 dark:text-gray-400">Mar 22, 2026 &bull; Lagos</span>
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-slate-700">
+                <span className="text-[10px] font-semibold text-red-500">500/500 tickets</span>
+                <span className="text-[10px] font-semibold text-emerald-600">NGN 8,000</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Join Waitlist button */}
+          <button className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[11px] font-bold rounded-xl mb-3 shadow-lg">
+            Join Waitlist
+          </button>
+
+          {/* Waitlist position card */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-amber-200 dark:border-amber-900/40 mb-3">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <HiOutlineClock className="w-4 h-4 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-gray-800 dark:text-gray-200">You are on the waitlist</p>
+                <p className="text-[9px] text-gray-500 dark:text-gray-400">Afro Beats Live Concert</p>
+              </div>
+            </div>
+            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-2 text-center">
+              <p className="text-[9px] text-amber-600 dark:text-amber-400 font-medium">Your Position</p>
+              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">#3</p>
+              <p className="text-[8px] text-gray-500 dark:text-gray-400">out of 12 people waiting</p>
+            </div>
+          </div>
+
+          {/* Notification card */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-emerald-200 dark:border-emerald-900/40 shadow-md">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
+                <HiOutlineBell className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">A spot opened up!</p>
+                <p className="text-[8px] text-gray-500 dark:text-gray-400">You can now purchase a ticket</p>
+              </div>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/20 to-orange-500/20 blur-3xl rounded-full -z-10" />
+    </div>
+  );
+}
+
 /* ─── Testimonial Data ─── */
 const testimonials = [
   { name: 'Adaeze Okoro', role: 'Event Creator', text: 'Eventful transformed how I manage my events. The QR check-in system is flawless and the analytics dashboard helps me make better decisions.' },
@@ -376,6 +538,26 @@ export default function LandingPage() {
   const [featuredEvents, setFeaturedEvents] = useState<Event[]>([]);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [contactSent, setContactSent] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
+
+  // Scroll reveal refs
+  const statsRef = useScrollReveal();
+  const showcase1Ref = useScrollReveal();
+  const showcase2Ref = useScrollReveal();
+  const showcase3Ref = useScrollReveal();
+  const showcase4Ref = useScrollReveal();
+  const featuresGridRef = useScrollReveal();
+  const featuredEventsRef = useScrollReveal();
+  const testimonialsRef = useScrollReveal();
+  const aboutRef = useScrollReveal();
+  const howItWorksRef = useScrollReveal();
+  const contactRef = useScrollReveal();
+
+  // Animated counters
+  const eventsCounter = useCountUp(26, 1200);
+  const ticketsCounter = useCountUp(1800, 1500);
+  const attendeesCounter = useCountUp(1200, 1500);
 
   useEffect(() => {
     api.get('/events', { params: { limit: 6 } })
@@ -390,6 +572,20 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, []);
 
+  const handleSmoothScroll = useCallback((e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    setMobileMenu(false);
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  const handleContactSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setContactSent(true);
+    setContactForm({ name: '', email: '', message: '' });
+    setTimeout(() => setContactSent(false), 4000);
+  };
+
   return (
     <div className="min-h-screen bg-[rgb(var(--bg-primary))] transition-colors duration-200">
       {/* ─── Navbar ─── */}
@@ -401,8 +597,10 @@ export default function LandingPage() {
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-6">
             <Link to="/events" className="text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Events</Link>
-            <a href="#features" className="text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Features</a>
-            <a href="#how-it-works" className="text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">How It Works</a>
+            <a href="#features" onClick={(e) => handleSmoothScroll(e, 'features')} className="text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Features</a>
+            <a href="#about" onClick={(e) => handleSmoothScroll(e, 'about')} className="text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">About</a>
+            <a href="#how-it-works" onClick={(e) => handleSmoothScroll(e, 'how-it-works')} className="text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">How It Works</a>
+            <a href="#contact" onClick={(e) => handleSmoothScroll(e, 'contact')} className="text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Contact</a>
           </div>
           <div className="hidden md:flex items-center gap-3">
             <button
@@ -453,8 +651,10 @@ export default function LandingPage() {
         {mobileMenu && (
           <div className="md:hidden border-t border-[rgb(var(--border-primary))] bg-[rgb(var(--bg-primary))] px-4 py-4 space-y-3">
             <Link to="/events" className="block text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600" onClick={() => setMobileMenu(false)}>Events</Link>
-            <a href="#features" className="block text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600" onClick={() => setMobileMenu(false)}>Features</a>
-            <a href="#how-it-works" className="block text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600" onClick={() => setMobileMenu(false)}>How It Works</a>
+            <a href="#features" className="block text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600" onClick={(e) => handleSmoothScroll(e, 'features')}>Features</a>
+            <a href="#about" className="block text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600" onClick={(e) => handleSmoothScroll(e, 'about')}>About</a>
+            <a href="#how-it-works" className="block text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600" onClick={(e) => handleSmoothScroll(e, 'how-it-works')}>How It Works</a>
+            <a href="#contact" className="block text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600" onClick={(e) => handleSmoothScroll(e, 'contact')}>Contact</a>
             <div className="pt-3 border-t border-[rgb(var(--border-primary))] flex gap-3">
               {user ? (
                 <Link to="/events" className="flex-1 text-center px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg" onClick={() => setMobileMenu(false)}>Dashboard</Link>
@@ -479,21 +679,21 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Left - Text */}
             <div className="text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-sm font-medium mb-8">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-sm font-medium mb-8 animate-[fadeIn_0.6s_ease-out]">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 The #1 Event Management Platform
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[rgb(var(--text-primary))] leading-tight mb-6">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[rgb(var(--text-primary))] leading-tight mb-6 animate-[fadeIn_0.8s_ease-out]">
                 Create, Discover &{' '}
                 <span className="bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
                   Experience
                 </span>{' '}
                 Unforgettable Events
               </h1>
-              <p className="text-lg sm:text-xl text-[rgb(var(--text-secondary))] mb-10 max-w-xl mx-auto lg:mx-0">
+              <p className="text-lg sm:text-xl text-[rgb(var(--text-secondary))] mb-10 max-w-xl mx-auto lg:mx-0 animate-[fadeIn_1s_ease-out]">
                 From concert halls to conference rooms. Manage events, sell tickets with secure QR codes, track analytics, and grow your audience — all in one platform.
               </p>
-              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start">
+              <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start animate-[fadeIn_1.2s_ease-out]">
                 {user ? (
                   <Link
                     to="/events"
@@ -519,7 +719,7 @@ export default function LandingPage() {
                 )}
               </div>
               {/* Trust indicators */}
-              <div className="flex items-center gap-6 mt-10 justify-center lg:justify-start">
+              <div className="flex items-center gap-6 mt-10 justify-center lg:justify-start animate-[fadeIn_1.4s_ease-out]">
                 <div className="flex -space-x-2">
                   {['bg-purple-500', 'bg-blue-500', 'bg-pink-500', 'bg-orange-500'].map((bg, i) => (
                     <div key={i} className={`w-8 h-8 rounded-full ${bg} border-2 border-white dark:border-slate-900 flex items-center justify-center text-white text-[10px] font-bold`}>
@@ -548,16 +748,16 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Stats Bar ─── */}
-      <section className="border-y border-[rgb(var(--border-primary))] bg-[rgb(var(--bg-secondary))]">
+      <section className="border-y border-[rgb(var(--border-primary))] bg-[rgb(var(--bg-secondary))]" ref={statsRef}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { value: '26+', label: 'Events Created', icon: <HiOutlineCalendar className="w-6 h-6" /> },
-              { value: '1,800+', label: 'Tickets Sold', icon: <HiOutlineTicket className="w-6 h-6" /> },
-              { value: '1,200+', label: 'Happy Attendees', icon: <HiOutlineUserGroup className="w-6 h-6" /> },
-              { value: '99.9%', label: 'Uptime', icon: <HiOutlineShieldCheck className="w-6 h-6" /> },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
+              { value: `${eventsCounter.count}+`, label: 'Events Created', icon: <HiOutlineCalendar className="w-6 h-6" />, counterRef: eventsCounter.ref },
+              { value: `${ticketsCounter.count.toLocaleString()}+`, label: 'Tickets Sold', icon: <HiOutlineTicket className="w-6 h-6" />, counterRef: ticketsCounter.ref },
+              { value: `${attendeesCounter.count.toLocaleString()}+`, label: 'Happy Attendees', icon: <HiOutlineUserGroup className="w-6 h-6" />, counterRef: attendeesCounter.ref },
+              { value: '99.9%', label: 'Uptime', icon: <HiOutlineShieldCheck className="w-6 h-6" />, counterRef: null },
+            ].map((stat, i) => (
+              <div key={stat.label} className={`reveal reveal-delay-${i + 1} text-center`} ref={stat.counterRef}>
                 <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-3">
                   {stat.icon}
                 </div>
@@ -570,13 +770,13 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Feature Showcase 1: Analytics Dashboard ─── */}
-      <section id="features" className="py-20 lg:py-28 bg-[rgb(var(--bg-primary))]">
+      <section id="features" className="py-20 lg:py-28 bg-[rgb(var(--bg-primary))]" ref={showcase1Ref}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className="order-2 lg:order-1">
+            <div className="reveal order-2 lg:order-1">
               <DashboardMockup />
             </div>
-            <div className="order-1 lg:order-2">
+            <div className="reveal reveal-delay-2 order-1 lg:order-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-medium mb-4">
                 <HiOutlineChartBar className="w-3.5 h-3.5" /> Analytics
               </div>
@@ -607,10 +807,10 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Feature Showcase 2: QR Tickets & PDF ─── */}
-      <section className="py-20 lg:py-28 bg-[rgb(var(--bg-secondary))]">
+      <section className="py-20 lg:py-28 bg-[rgb(var(--bg-secondary))]" ref={showcase2Ref}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div>
+            <div className="reveal">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-medium mb-4">
                 <HiOutlineQrcode className="w-3.5 h-3.5" /> Ticketing
               </div>
@@ -636,7 +836,7 @@ export default function LandingPage() {
                 ))}
               </div>
             </div>
-            <div className="flex justify-center lg:justify-end">
+            <div className="reveal reveal-delay-2 flex justify-center lg:justify-end">
               <div className="transform hover:scale-[1.02] transition-transform duration-500">
                 <TicketMockup />
               </div>
@@ -646,13 +846,13 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Feature Showcase 3: Attendee Management ─── */}
-      <section className="py-20 lg:py-28 bg-[rgb(var(--bg-primary))]">
+      <section className="py-20 lg:py-28 bg-[rgb(var(--bg-primary))]" ref={showcase3Ref}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className="order-2 lg:order-1">
+            <div className="reveal order-2 lg:order-1">
               <AttendeeTableMockup />
             </div>
-            <div className="order-1 lg:order-2">
+            <div className="reveal reveal-delay-2 order-1 lg:order-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-medium mb-4">
                 <HiOutlineClipboardList className="w-3.5 h-3.5" /> Management
               </div>
@@ -682,10 +882,49 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── All Features Grid ─── */}
-      <section className="py-20 bg-[rgb(var(--bg-secondary))]">
+      {/* ─── Feature Showcase 4: Waitlist System ─── */}
+      <section className="py-20 lg:py-28 bg-[rgb(var(--bg-secondary))]" ref={showcase4Ref}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <div className="reveal">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-medium mb-4">
+                <HiOutlineClock className="w-3.5 h-3.5" /> Waitlist
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-[rgb(var(--text-primary))] mb-4">
+                Never Miss a Sold-Out Event
+              </h2>
+              <p className="text-lg text-[rgb(var(--text-secondary))] mb-8">
+                When events sell out, the excitement doesn't stop. Join the waitlist and get notified instantly when a spot opens up.
+              </p>
+              <div className="space-y-4">
+                {[
+                  'Auto-notification when a ticket is cancelled',
+                  'Real-time position tracking in the queue',
+                  'One-click join — no extra steps needed',
+                  'Creators see waitlist analytics in dashboard',
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <HiOutlineCheck className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                    </div>
+                    <span className="text-[rgb(var(--text-secondary))]">{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="reveal reveal-delay-2 flex justify-center lg:justify-end">
+              <div className="transform hover:scale-[1.02] transition-transform duration-500">
+                <WaitlistMockup />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── All Features Grid ─── */}
+      <section className="py-20 bg-[rgb(var(--bg-primary))]" ref={featuresGridRef}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="reveal text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-[rgb(var(--text-primary))] mb-4">
               Everything you need to run events
             </h2>
@@ -762,18 +1001,6 @@ export default function LandingPage() {
                 color: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400',
               },
               {
-                icon: <HiOutlineMail className="w-6 h-6" />,
-                title: 'Email Notifications',
-                description: 'Automatic emails for tickets, reminders, and event updates.',
-                color: 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400',
-              },
-              {
-                icon: <HiOutlinePhotograph className="w-6 h-6" />,
-                title: 'Image Gallery',
-                description: 'Multi-image galleries with lightbox viewer for every event.',
-                color: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400',
-              },
-              {
                 icon: <HiOutlineTag className="w-6 h-6" />,
                 title: 'Promo Codes & Discounts',
                 description: 'Create discount codes to boost sales and reward early attendees.',
@@ -785,10 +1012,28 @@ export default function LandingPage() {
                 description: 'Creators can attend other creators\' events without a separate account.',
                 color: 'bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400',
               },
-            ].map((feature) => (
+              {
+                icon: <HiOutlineMoon className="w-6 h-6" />,
+                title: 'Dark Mode',
+                description: 'Beautiful dark theme that\'s easy on the eyes, day or night.',
+                color: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
+              },
+              {
+                icon: <HiOutlinePhotograph className="w-6 h-6" />,
+                title: 'Image Upload',
+                description: 'Drag-and-drop image uploads for stunning event pages.',
+                color: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400',
+              },
+              {
+                icon: <HiOutlineMail className="w-6 h-6" />,
+                title: 'Social Sharing',
+                description: 'Share events on Twitter, Facebook, LinkedIn, and WhatsApp.',
+                color: 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400',
+              },
+            ].map((feature, i) => (
               <div
                 key={feature.title}
-                className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                className={`reveal reveal-delay-${(i % 4) + 1} glass border border-[rgb(var(--border-primary))] rounded-2xl p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300`}
               >
                 <div className={`w-12 h-12 rounded-xl ${feature.color} flex items-center justify-center mb-4`}>
                   {feature.icon}
@@ -803,9 +1048,9 @@ export default function LandingPage() {
 
       {/* ─── Featured Events ─── */}
       {featuredEvents.length > 0 && (
-        <section className="py-20 bg-[rgb(var(--bg-primary))]">
+        <section className="py-20 bg-[rgb(var(--bg-secondary))]" ref={featuredEventsRef}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
+            <div className="reveal text-center mb-16">
               <h2 className="text-3xl sm:text-4xl font-bold text-[rgb(var(--text-primary))] mb-4">
                 Live on Eventful
               </h2>
@@ -814,11 +1059,11 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredEvents.map((event) => (
+              {featuredEvents.map((event, i) => (
                 <Link
                   key={event.id}
                   to={`/events/${event.id}`}
-                  className="glass border border-[rgb(var(--border-primary))] rounded-2xl overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                  className={`reveal reveal-delay-${(i % 3) + 1} glass border border-[rgb(var(--border-primary))] rounded-2xl overflow-hidden group hover:shadow-lg hover:-translate-y-1 transition-all duration-300`}
                 >
                   <div className="relative h-48 bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 overflow-hidden">
                     {event.imageUrl ? (
@@ -863,10 +1108,10 @@ export default function LandingPage() {
                 </Link>
               ))}
             </div>
-            <div className="text-center mt-10">
+            <div className="reveal text-center mt-10">
               <Link
                 to="/events"
-                className="inline-flex items-center gap-2 px-6 py-3 border border-[rgb(var(--border-secondary))] text-[rgb(var(--text-primary))] font-semibold rounded-xl hover:bg-[rgb(var(--bg-secondary))] transition-all"
+                className="inline-flex items-center gap-2 px-6 py-3 border border-[rgb(var(--border-secondary))] text-[rgb(var(--text-primary))] font-semibold rounded-xl hover:bg-[rgb(var(--bg-primary))] transition-all"
               >
                 View All Events <HiOutlineArrowRight className="w-4 h-4" />
               </Link>
@@ -876,9 +1121,9 @@ export default function LandingPage() {
       )}
 
       {/* ─── Testimonials ─── */}
-      <section className="py-20 bg-[rgb(var(--bg-secondary))]">
+      <section className="py-20 bg-[rgb(var(--bg-primary))]" ref={testimonialsRef}>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
+          <div className="reveal text-center mb-12">
             <h2 className="text-3xl sm:text-4xl font-bold text-[rgb(var(--text-primary))] mb-4">
               Loved by Event Creators
             </h2>
@@ -886,16 +1131,21 @@ export default function LandingPage() {
               See what our users have to say about Eventful
             </p>
           </div>
-          <div className="relative">
+          <div className="reveal relative">
             <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-8 sm:p-12 text-center">
               <div className="flex justify-center gap-1 mb-6">
                 {[...Array(5)].map((_, i) => (
                   <HiOutlineStar key={i} className="w-5 h-5 text-yellow-500 fill-yellow-500" />
                 ))}
               </div>
-              <p className="text-lg sm:text-xl text-[rgb(var(--text-primary))] mb-8 leading-relaxed italic max-w-2xl mx-auto">
-                "{testimonials[activeTestimonial].text}"
-              </p>
+              <div className="min-h-[100px] flex items-center justify-center">
+                <p
+                  key={activeTestimonial}
+                  className="text-lg sm:text-xl text-[rgb(var(--text-primary))] mb-8 leading-relaxed italic max-w-2xl mx-auto animate-[fadeIn_0.5s_ease-out]"
+                >
+                  &ldquo;{testimonials[activeTestimonial].text}&rdquo;
+                </p>
+              </div>
               <div className="flex items-center justify-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-semibold">
                   {testimonials[activeTestimonial].name.split(' ').map(n => n[0]).join('')}
@@ -913,10 +1163,10 @@ export default function LandingPage() {
                   key={i}
                   type="button"
                   onClick={() => setActiveTestimonial(i)}
-                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                  className={`h-2.5 rounded-full transition-all duration-300 ${
                     i === activeTestimonial
                       ? 'bg-emerald-600 w-8'
-                      : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400'
+                      : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 w-2.5'
                   }`}
                   aria-label={`View testimonial ${i + 1}`}
                 />
@@ -926,10 +1176,54 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── How It Works ─── */}
-      <section id="how-it-works" className="py-20 bg-[rgb(var(--bg-primary))]">
+      {/* ─── About Us ─── */}
+      <section id="about" className="py-20 bg-[rgb(var(--bg-secondary))]" ref={aboutRef}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
+          <div className="reveal text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[rgb(var(--text-primary))] mb-4">
+              Built for the African Event Community
+            </h2>
+            <p className="text-[rgb(var(--text-secondary))] text-lg max-w-2xl mx-auto">
+              Eventful was born from a simple idea: event management should be accessible, affordable, and delightful for everyone.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              {
+                icon: <HiOutlineLightBulb className="w-8 h-8" />,
+                title: 'Our Mission',
+                description: 'Making event management accessible to every creator — from small meetups to large festivals. No complexity, no ridiculous fees.',
+                color: 'from-emerald-500 to-teal-600',
+              },
+              {
+                icon: <HiOutlineGlobeAlt className="w-8 h-8" />,
+                title: 'Built in Africa',
+                description: 'Created by Ibrahim Bello as part of AltSchool Africa\'s School of Software Engineering. Designed for the African market, open to the world.',
+                color: 'from-blue-500 to-cyan-600',
+              },
+              {
+                icon: <HiOutlineHeart className="w-8 h-8" />,
+                title: 'Open & Growing',
+                description: 'Open source and community-driven. We believe in building together — contributions, feedback, and ideas are always welcome.',
+                color: 'from-purple-500 to-pink-600',
+              },
+            ].map((item, i) => (
+              <div key={item.title} className={`reveal reveal-delay-${i + 1} text-center`}>
+                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${item.color} text-white flex items-center justify-center mx-auto mb-5 shadow-lg`}>
+                  {item.icon}
+                </div>
+                <h3 className="text-lg font-semibold text-[rgb(var(--text-primary))] mb-3">{item.title}</h3>
+                <p className="text-sm text-[rgb(var(--text-secondary))] leading-relaxed max-w-xs mx-auto">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── How It Works ─── */}
+      <section id="how-it-works" className="py-20 bg-[rgb(var(--bg-primary))]" ref={howItWorksRef}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="reveal text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-[rgb(var(--text-primary))] mb-4">
               Get started in minutes
             </h2>
@@ -956,7 +1250,7 @@ export default function LandingPage() {
                 icon: <HiOutlineTicket className="w-8 h-8" />,
               },
             ].map((item, index) => (
-              <div key={item.step} className="relative text-center group">
+              <div key={item.step} className={`reveal reveal-delay-${index + 1} relative text-center group`}>
                 {/* Connector line */}
                 {index < 2 && (
                   <div className="hidden md:block absolute top-10 left-[60%] w-[80%] h-px bg-gradient-to-r from-emerald-300 dark:from-emerald-700 to-transparent" />
@@ -971,6 +1265,111 @@ export default function LandingPage() {
                 <p className="text-sm text-[rgb(var(--text-secondary))] max-w-xs mx-auto">{item.description}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Contact Us ─── */}
+      <section id="contact" className="py-20 bg-[rgb(var(--bg-secondary))]" ref={contactRef}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="reveal text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[rgb(var(--text-primary))] mb-4">
+              Get in Touch
+            </h2>
+            <p className="text-[rgb(var(--text-secondary))] text-lg max-w-2xl mx-auto">
+              Have questions, feedback, or partnership ideas? We'd love to hear from you.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
+            {/* Form */}
+            <div className="reveal">
+              <form onSubmit={handleContactSubmit} className="space-y-5">
+                <div>
+                  <label htmlFor="contact-name" className="block text-sm font-medium text-[rgb(var(--text-primary))] mb-1.5">Name</label>
+                  <input
+                    id="contact-name"
+                    type="text"
+                    required
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[rgb(var(--border-primary))] bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                    placeholder="Your name"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="contact-email" className="block text-sm font-medium text-[rgb(var(--text-primary))] mb-1.5">Email</label>
+                  <input
+                    id="contact-email"
+                    type="email"
+                    required
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[rgb(var(--border-primary))] bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="contact-message" className="block text-sm font-medium text-[rgb(var(--text-primary))] mb-1.5">Message</label>
+                  <textarea
+                    id="contact-message"
+                    required
+                    rows={5}
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
+                    className="w-full px-4 py-2.5 rounded-xl border border-[rgb(var(--border-primary))] bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
+                    placeholder="Tell us what's on your mind..."
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                  Send Message
+                </button>
+                {contactSent && (
+                  <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl animate-[fadeIn_0.3s_ease-out]">
+                    <HiOutlineCheck className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                    <p className="text-sm text-emerald-700 dark:text-emerald-400">Message sent! We'll get back to you soon.</p>
+                  </div>
+                )}
+              </form>
+            </div>
+            {/* Info panel */}
+            <div className="reveal reveal-delay-2 space-y-8">
+              <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                    <HiOutlineMail className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-[rgb(var(--text-primary))] mb-1">Email Us</h4>
+                    <a href="mailto:hello@eventful-platform.com" className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline">hello@eventful-platform.com</a>
+                  </div>
+                </div>
+              </div>
+              <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+                    <HiOutlineGlobeAlt className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-[rgb(var(--text-primary))] mb-1">GitHub</h4>
+                    <a href="https://github.com/ibraheembello/Eventful-Platform" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">ibraheembello/Eventful-Platform</a>
+                  </div>
+                </div>
+              </div>
+              <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center flex-shrink-0">
+                    <HiOutlineClock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-[rgb(var(--text-primary))] mb-1">Response Time</h4>
+                    <p className="text-sm text-[rgb(var(--text-secondary))]">We typically respond within 24 hours</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
