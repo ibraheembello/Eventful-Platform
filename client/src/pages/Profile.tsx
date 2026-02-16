@@ -4,6 +4,8 @@ import api from '../lib/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { HiOutlineCamera, HiOutlineUser, HiOutlineMail, HiOutlineShieldCheck, HiOutlineCalendar, HiOutlineUpload, HiOutlineLink } from 'react-icons/hi';
+import { FcGoogle } from 'react-icons/fc';
+import { FaGithub } from 'react-icons/fa';
 
 export default function Profile() {
   const { user, updateProfile } = useAuth();
@@ -258,6 +260,19 @@ export default function Profile() {
                 {user.role}
               </span>
             </div>
+            {user.provider && user.provider !== 'local' && (
+              <div className="flex items-center gap-3">
+                {user.provider === 'google' ? (
+                  <FcGoogle className="w-5 h-5" />
+                ) : (
+                  <FaGithub className="w-5 h-5 text-[rgb(var(--text-primary))]" />
+                )}
+                <span className="text-sm text-[rgb(var(--text-secondary))]">Signed in with:</span>
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 capitalize">
+                  {user.provider}
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               <HiOutlineCalendar className="w-5 h-5 text-emerald-500" />
               <span className="text-sm text-[rgb(var(--text-secondary))]">Member since:</span>

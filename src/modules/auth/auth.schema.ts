@@ -24,6 +24,18 @@ export const updateProfileSchema = z.object({
   ).optional(),
 });
 
+export const googleAuthSchema = z.object({
+  credential: z.string().min(1, 'Google credential is required'),
+  role: z.enum(['CREATOR', 'EVENTEE']).optional(),
+});
+
+export const githubAuthSchema = z.object({
+  code: z.string().min(1, 'GitHub authorization code is required'),
+  role: z.enum(['CREATOR', 'EVENTEE']).optional(),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;
+export type GitHubAuthInput = z.infer<typeof githubAuthSchema>;

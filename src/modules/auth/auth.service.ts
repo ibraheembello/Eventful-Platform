@@ -1,10 +1,13 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import prisma from '../../config/database';
 import { ApiError } from '../../utils/apiError';
-import { RegisterInput, LoginInput, UpdateProfileInput } from './auth.schema';
+import { RegisterInput, LoginInput, UpdateProfileInput, GoogleAuthInput, GitHubAuthInput } from './auth.schema';
 import { AuthPayload } from '../../middleware/auth';
 import { EmailService } from '../../utils/emailService';
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export class AuthService {
   static async register(input: RegisterInput) {
@@ -58,6 +61,11 @@ export class AuthService {
       throw ApiError.unauthorized('Invalid email or password');
     }
 
+    if (!user.password) {
+      const providerName = user.provider === 'google' ? 'Google' : user.provider === 'github' ? 'GitHub' : 'social';
+      throw ApiError.unauthorized(`This account uses ${providerName} sign-in. Please use the ${providerName} button to log in.`);
+    }
+
     const isPasswordValid = await bcrypt.compare(input.password, user.password);
 
     if (!isPasswordValid) {
@@ -85,6 +93,7 @@ export class AuthService {
         lastName: true,
         role: true,
         profileImage: true,
+        provider: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -118,6 +127,164 @@ export class AuthService {
     });
 
     return user;
+  }
+
+  static async googleLogin(input: GoogleAuthInput) {
+    let payload;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken: input.credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch {
+      throw ApiError.unauthorized('Invalid Google credential');
+    }
+
+    if (!payload || !payload.email) {
+      throw ApiError.unauthorized('Could not retrieve email from Google');
+    }
+
+    const { sub: googleId, email, given_name, family_name, picture } = payload;
+
+    // Try to find existing user by googleId or email
+    let user = await prisma.user.findFirst({
+      where: { OR: [{ googleId }, { email }] },
+    });
+
+    if (user) {
+      // Link Google account if found by email but not yet linked
+      if (!user.googleId) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { googleId, provider: user.provider === 'local' ? 'google' : user.provider },
+        });
+      }
+    } else {
+      // New user — role is required
+      if (!input.role) {
+        throw ApiError.badRequest('Role is required for new accounts. Please sign up first.');
+      }
+
+      user = await prisma.user.create({
+        data: {
+          email,
+          googleId,
+          provider: 'google',
+          firstName: given_name || 'User',
+          lastName: family_name || '',
+          role: input.role,
+          profileImage: picture || null,
+        },
+      });
+
+      // Send welcome email (fire and forget)
+      EmailService.sendWelcome(user.email, user.firstName).catch(() => {});
+    }
+
+    const tokens = this.generateTokens({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    const { password: _, ...userWithoutPassword } = user;
+    return { user: userWithoutPassword, ...tokens };
+  }
+
+  static async githubLogin(input: GitHubAuthInput) {
+    // Exchange code for access token
+    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code: input.code,
+      }),
+    });
+
+    const tokenData = await tokenResponse.json() as { error?: string; access_token?: string };
+    if (tokenData.error || !tokenData.access_token) {
+      throw ApiError.unauthorized('Failed to authenticate with GitHub');
+    }
+
+    const accessToken = tokenData.access_token;
+
+    // Fetch user profile
+    const profileResponse = await fetch('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const profile = await profileResponse.json() as { id?: number; email?: string; name?: string; login?: string; avatar_url?: string };
+
+    if (!profile.id) {
+      throw ApiError.unauthorized('Failed to fetch GitHub profile');
+    }
+
+    // Get email — may be private
+    let email = profile.email;
+    if (!email) {
+      const emailsResponse = await fetch('https://api.github.com/user/emails', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const emails = await emailsResponse.json() as Array<{ email: string; primary: boolean; verified: boolean }>;
+      const primary = emails.find((e) => e.primary && e.verified);
+      email = primary?.email;
+    }
+
+    if (!email) {
+      throw ApiError.badRequest('Could not retrieve email from GitHub. Please ensure your GitHub email is verified.');
+    }
+
+    const githubId = String(profile.id);
+
+    // Try to find existing user by githubId or email
+    let user = await prisma.user.findFirst({
+      where: { OR: [{ githubId }, { email }] },
+    });
+
+    if (user) {
+      // Link GitHub account if found by email but not yet linked
+      if (!user.githubId) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { githubId, provider: user.provider === 'local' ? 'github' : user.provider },
+        });
+      }
+    } else {
+      // New user — role is required
+      if (!input.role) {
+        throw ApiError.badRequest('Role is required for new accounts. Please sign up first.');
+      }
+
+      const nameParts = (profile.name || profile.login || '').split(' ');
+      user = await prisma.user.create({
+        data: {
+          email,
+          githubId,
+          provider: 'github',
+          firstName: nameParts[0] || 'User',
+          lastName: nameParts.slice(1).join(' ') || '',
+          role: input.role,
+          profileImage: profile.avatar_url || null,
+        },
+      });
+
+      // Send welcome email (fire and forget)
+      EmailService.sendWelcome(user.email, user.firstName).catch(() => {});
+    }
+
+    const tokens = this.generateTokens({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    const { password: _, ...userWithoutPassword } = user;
+    return { user: userWithoutPassword, ...tokens };
   }
 
   static async refreshToken(refreshToken: string) {

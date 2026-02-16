@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AuthController } from './auth.controller';
 import { validate } from '../../middleware/validate';
-import { registerSchema, loginSchema, updateProfileSchema } from './auth.schema';
+import { registerSchema, loginSchema, updateProfileSchema, googleAuthSchema, githubAuthSchema } from './auth.schema';
 import { authenticate } from '../../middleware/auth';
 import { authLimiter } from '../../middleware/rateLimiter';
 
@@ -113,6 +113,70 @@ router.post('/register', authLimiter, validate(registerSchema), AuthController.r
  *         description: Invalid credentials
  */
 router.post('/login', authLimiter, validate(loginSchema), AuthController.login);
+
+/**
+ * @swagger
+ * /auth/google:
+ *   post:
+ *     summary: Sign in or register with Google
+ *     tags: [Authentication]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [credential]
+ *             properties:
+ *               credential:
+ *                 type: string
+ *                 description: Google ID token from frontend SDK
+ *               role:
+ *                 type: string
+ *                 enum: [CREATOR, EVENTEE]
+ *                 description: Required for new users (registration)
+ *     responses:
+ *       200:
+ *         description: Google login successful
+ *       400:
+ *         description: Role required for new users
+ *       401:
+ *         description: Invalid Google credential
+ */
+router.post('/google', authLimiter, validate(googleAuthSchema), AuthController.googleLogin);
+
+/**
+ * @swagger
+ * /auth/github:
+ *   post:
+ *     summary: Sign in or register with GitHub
+ *     tags: [Authentication]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [code]
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 description: GitHub OAuth authorization code
+ *               role:
+ *                 type: string
+ *                 enum: [CREATOR, EVENTEE]
+ *                 description: Required for new users (registration)
+ *     responses:
+ *       200:
+ *         description: GitHub login successful
+ *       400:
+ *         description: Role required for new users
+ *       401:
+ *         description: Failed to authenticate with GitHub
+ */
+router.post('/github', authLimiter, validate(githubAuthSchema), AuthController.githubLogin);
 
 /**
  * @swagger
