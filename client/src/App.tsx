@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
@@ -50,6 +50,7 @@ function App() {
             <Route path="/promo-codes" element={<ProtectedRoute roles={['CREATOR']}><PromoCodes /></ProtectedRoute>} />
             <Route path="/saved" element={<ProtectedRoute><SavedEvents /></ProtectedRoute>} />
             <Route path="/waitlists" element={<ProtectedRoute><MyWaitlists /></ProtectedRoute>} />
+            <Route path="/waitlist" element={<Navigate to="/waitlists" replace />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute roles={['CREATOR']}><Analytics /></ProtectedRoute>} />
           </Route>
