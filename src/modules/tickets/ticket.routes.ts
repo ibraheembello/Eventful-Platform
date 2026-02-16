@@ -99,4 +99,31 @@ router.post(
   TicketController.verifyTicket
 );
 
+/**
+ * @swagger
+ * /tickets/{id}/cancel:
+ *   put:
+ *     summary: Cancel an active ticket
+ *     tags: [Tickets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Ticket cancelled successfully
+ *       400:
+ *         description: Ticket is not active
+ *       403:
+ *         description: Can only cancel own tickets
+ *       404:
+ *         description: Ticket not found
+ */
+router.put('/:id/cancel', authenticate, TicketController.cancelTicket);
+
 export default router;

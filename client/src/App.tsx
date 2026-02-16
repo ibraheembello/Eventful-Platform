@@ -19,6 +19,7 @@ import Profile from './pages/Profile';
 import SavedEvents from './pages/SavedEvents';
 import AttendeeList from './pages/AttendeeList';
 import PromoCodes from './pages/PromoCodes';
+import MyWaitlists from './pages/MyWaitlists';
 
 function HomeRoute() {
   return <LandingPage />;
@@ -48,6 +49,7 @@ function App() {
             <Route path="/events/:id/attendees" element={<ProtectedRoute roles={['CREATOR']}><AttendeeList /></ProtectedRoute>} />
             <Route path="/promo-codes" element={<ProtectedRoute roles={['CREATOR']}><PromoCodes /></ProtectedRoute>} />
             <Route path="/saved" element={<ProtectedRoute><SavedEvents /></ProtectedRoute>} />
+            <Route path="/waitlists" element={<ProtectedRoute><MyWaitlists /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute roles={['CREATOR']}><Analytics /></ProtectedRoute>} />
           </Route>

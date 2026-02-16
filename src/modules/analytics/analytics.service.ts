@@ -32,13 +32,20 @@ export class AnalyticsService {
         }),
       ]);
 
-    const [ticketsActive, ticketsCancelled] = await Promise.all([
+    const [ticketsActive, ticketsCancelled, totalWaitlistEntries, eventsWithWaitlists] = await Promise.all([
       prisma.ticket.count({
         where: { eventId: { in: eventIds }, status: 'ACTIVE' },
       }),
       prisma.ticket.count({
         where: { eventId: { in: eventIds }, status: 'CANCELLED' },
       }),
+      prisma.waitlist.count({
+        where: { eventId: { in: eventIds } },
+      }),
+      prisma.waitlist.groupBy({
+        by: ['eventId'],
+        where: { eventId: { in: eventIds } },
+      }).then((groups) => groups.length),
     ]);
 
     const result = {
@@ -52,6 +59,8 @@ export class AnalyticsService {
         used: totalAttendees,
         cancelled: ticketsCancelled,
       },
+      totalWaitlistEntries,
+      eventsWithWaitlists,
     };
 
     await Cache.set(cacheKey, result, 300);

@@ -1,6 +1,7 @@
 import prisma from '../../config/database';
 import { ApiError } from '../../utils/apiError';
 import { Cache } from '../../utils/cache';
+import { EmailService } from '../../utils/emailService';
 import { QRCodeService } from '../qrcode/qrcode.service';
 
 export class TicketService {
@@ -151,5 +152,74 @@ export class TicketService {
     });
 
     return updatedTicket;
+  }
+
+  static async cancelTicket(ticketId: string, userId: string) {
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        event: {
+          select: { id: true, title: true, date: true, location: true },
+        },
+      },
+    });
+
+    if (!ticket) {
+      throw ApiError.notFound('Ticket not found');
+    }
+
+    if (ticket.userId !== userId) {
+      throw ApiError.forbidden('You can only cancel your own tickets');
+    }
+
+    if (ticket.status !== 'ACTIVE') {
+      throw ApiError.badRequest(`Cannot cancel a ticket that is ${ticket.status.toLowerCase()}`);
+    }
+
+    const cancelled = await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { status: 'CANCELLED' },
+      include: {
+        event: {
+          select: { id: true, title: true, date: true, location: true },
+        },
+      },
+    });
+
+    // Clear caches
+    await Promise.all([
+      Cache.delPattern(`tickets:user:${userId}:*`),
+      Cache.delPattern(`events:*`),
+      Cache.delPattern(`analytics:*`),
+    ]);
+
+    // Notify first waitlisted user (fire and forget)
+    this.notifyNextWaitlistUser(ticket.event.id, ticket.event.title).catch(() => {});
+
+    return cancelled;
+  }
+
+  private static async notifyNextWaitlistUser(eventId: string, eventTitle: string) {
+    const nextEntry = await prisma.waitlist.findFirst({
+      where: { eventId, notified: false },
+      orderBy: { position: 'asc' },
+      include: {
+        user: { select: { email: true, firstName: true } },
+      },
+    });
+
+    if (!nextEntry) return;
+
+    await prisma.waitlist.update({
+      where: { id: nextEntry.id },
+      data: { notified: true },
+    });
+
+    // Send email notification
+    await EmailService.sendWaitlistNotification(
+      nextEntry.user.email,
+      nextEntry.user.firstName,
+      { title: eventTitle, id: eventId },
+    );
   }
 }
