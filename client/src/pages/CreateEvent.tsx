@@ -40,6 +40,14 @@ export default function CreateEvent() {
   const [galleryUploading, setGalleryUploading] = useState(false);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
+  // Drag-to-reorder state
+  const [draggedImageId, setDraggedImageId] = useState<string | null>(null);
+  const [dragOverImageId, setDragOverImageId] = useState<string | null>(null);
+
+  // Caption editing state
+  const [editingCaptionId, setEditingCaptionId] = useState<string | null>(null);
+  const [editingCaptionText, setEditingCaptionText] = useState('');
+
   useEffect(() => {
     if (isEdit) {
       api.get(`/events/${id}`).then((res) => {
@@ -148,6 +156,66 @@ export default function CreateEvent() {
     }
   };
 
+  const handleGalleryDragStart = (imageId: string) => {
+    setDraggedImageId(imageId);
+  };
+
+  const handleGalleryDragOver = (e: React.DragEvent, imageId: string) => {
+    e.preventDefault();
+    if (imageId !== draggedImageId) setDragOverImageId(imageId);
+  };
+
+  const handleGalleryDragLeave = () => {
+    setDragOverImageId(null);
+  };
+
+  const handleGalleryDrop = async (targetId: string) => {
+    if (!draggedImageId || draggedImageId === targetId) {
+      setDraggedImageId(null);
+      setDragOverImageId(null);
+      return;
+    }
+    const oldImages = [...galleryImages];
+    const fromIdx = oldImages.findIndex((img) => img.id === draggedImageId);
+    const toIdx = oldImages.findIndex((img) => img.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    // Optimistic reorder
+    const reordered = [...oldImages];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    const withOrder = reordered.map((img, i) => ({ ...img, order: i }));
+    setGalleryImages(withOrder);
+    setDraggedImageId(null);
+    setDragOverImageId(null);
+
+    try {
+      await api.put(`/events/${id}/images/reorder`, { imageIds: withOrder.map((img) => img.id) });
+    } catch {
+      setGalleryImages(oldImages); // rollback
+      toast.error('Failed to reorder images');
+    }
+  };
+
+  const handleGalleryDragEnd = () => {
+    setDraggedImageId(null);
+    setDragOverImageId(null);
+  };
+
+  const handleSaveCaption = async (imageId: string) => {
+    setEditingCaptionId(null);
+    const img = galleryImages.find((i) => i.id === imageId);
+    if (!img || (img.caption || '') === editingCaptionText) return;
+    const oldImages = [...galleryImages];
+    setGalleryImages((prev) => prev.map((i) => i.id === imageId ? { ...i, caption: editingCaptionText || undefined } : i));
+    try {
+      await api.put(`/events/${id}/images/${imageId}`, { caption: editingCaptionText || null });
+    } catch {
+      setGalleryImages(oldImages);
+      toast.error('Failed to update caption');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -175,8 +243,13 @@ export default function CreateEvent() {
       }
 
       if (isEdit) {
-        await api.put(`/events/${id}`, payload);
-        toast.success('Event updated!');
+        const res = await api.put(`/events/${id}`, payload);
+        const notifiedCount = res.data.data?.notifiedCount || 0;
+        if (notifiedCount > 0) {
+          toast.success(`Event updated! ${notifiedCount} ticket holder(s) will be notified.`);
+        } else {
+          toast.success('Event updated!');
+        }
       } else {
         const res = await api.post('/events', payload);
         toast.success('Event created!');
@@ -468,27 +541,73 @@ export default function CreateEvent() {
               </div>
 
               {galleryImages.length > 0 ? (
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                  {galleryImages.map((img) => (
-                    <div key={img.id} className="relative group rounded-lg overflow-hidden h-24 bg-[rgb(var(--bg-tertiary))]">
-                      <img src={img.url} alt={img.caption || 'Gallery image'} className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveGalleryImage(img.id)}
-                        className="absolute top-1.5 right-1.5 p-1 bg-black/60 rounded-full text-white
-                          opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-all"
-                        aria-label="Remove gallery image"
+                <>
+                  <p className="text-xs text-[rgb(var(--text-tertiary))] mb-2">Drag images to reorder. Hover to edit caption or delete.</p>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    {galleryImages.map((img, idx) => (
+                      <div
+                        key={img.id}
+                        draggable
+                        onDragStart={() => handleGalleryDragStart(img.id)}
+                        onDragOver={(e) => handleGalleryDragOver(e, img.id)}
+                        onDragLeave={handleGalleryDragLeave}
+                        onDrop={() => handleGalleryDrop(img.id)}
+                        onDragEnd={handleGalleryDragEnd}
+                        className={`relative group rounded-lg overflow-hidden h-28 bg-[rgb(var(--bg-tertiary))] cursor-grab active:cursor-grabbing transition-all ${
+                          dragOverImageId === img.id ? 'ring-2 ring-emerald-500 scale-105' : ''
+                        } ${draggedImageId === img.id ? 'opacity-40' : ''}`}
                       >
-                        <HiOutlineTrash className="w-3.5 h-3.5" />
-                      </button>
-                      {img.caption && (
-                        <div className="absolute bottom-0 inset-x-0 bg-black/60 px-2 py-1">
-                          <p className="text-[10px] text-white truncate">{img.caption}</p>
+                        <img src={img.url} alt={img.caption || 'Gallery image'} className="w-full h-full object-cover" />
+
+                        {/* Order indicator */}
+                        <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-black/70 text-white text-[10px] font-bold flex items-center justify-center">
+                          {idx + 1}
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+
+                        {/* Delete button */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveGalleryImage(img.id)}
+                          className="absolute top-1.5 right-1.5 p-1 bg-black/60 rounded-full text-white
+                            opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-all"
+                          aria-label="Remove gallery image"
+                        >
+                          <HiOutlineTrash className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* Caption overlay */}
+                        {editingCaptionId === img.id ? (
+                          <div className="absolute bottom-0 inset-x-0 bg-black/80 px-1.5 py-1" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="text"
+                              value={editingCaptionText}
+                              onChange={(e) => setEditingCaptionText(e.target.value)}
+                              onBlur={() => handleSaveCaption(img.id)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveCaption(img.id); }}
+                              maxLength={200}
+                              className="w-full bg-transparent text-[10px] text-white outline-none placeholder-white/50"
+                              placeholder="Add caption..."
+                              autoFocus
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className="absolute bottom-0 inset-x-0 bg-black/60 px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-text"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCaptionId(img.id);
+                              setEditingCaptionText(img.caption || '');
+                            }}
+                          >
+                            <p className="text-[10px] text-white truncate">
+                              {img.caption || 'Click to add caption...'}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
               ) : (
                 <p className="text-xs text-[rgb(var(--text-tertiary))] italic">
                   No gallery images yet. Add additional photos to showcase your event.

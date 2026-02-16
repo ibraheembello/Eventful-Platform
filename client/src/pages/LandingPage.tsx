@@ -1021,9 +1021,15 @@ export default function LandingPage() {
               },
               {
                 icon: <HiOutlinePhotograph className="w-6 h-6" />,
-                title: 'Image Upload',
-                description: 'Drag-and-drop image uploads for stunning event pages.',
+                title: 'Image Gallery',
+                description: 'Multi-image galleries with drag-to-reorder, captions, and lightbox viewing.',
                 color: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400',
+              },
+              {
+                icon: <HiOutlineGlobeAlt className="w-6 h-6" />,
+                title: 'Event Update Alerts',
+                description: 'Ticket holders are automatically notified when event details change.',
+                color: 'bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400',
               },
               {
                 icon: <HiOutlineMail className="w-6 h-6" />,

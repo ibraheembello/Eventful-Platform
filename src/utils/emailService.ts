@@ -168,6 +168,49 @@ export class EmailService {
     await this.send(email, `Event Updated: ${event.title}`, html);
   }
 
+  static async sendEventCancellation(
+    email: string,
+    firstName: string,
+    event: { title: string; date: Date | string; location: string },
+  ) {
+    const dateStr = new Date(event.date).toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      hour: 'numeric', minute: '2-digit',
+    });
+    const html = baseTemplate('Event Cancelled', `
+      <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">Hi ${firstName},</p>
+      <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">
+        We're sorry to inform you that <strong style="color:#111827">${event.title}</strong> has been cancelled by the organizer.
+      </p>
+      <div style="background:#fef2f2;border-radius:12px;padding:20px;margin:16px 0;border-left:4px solid #ef4444">
+        <table style="width:100%;border-collapse:collapse">
+          <tr>
+            <td style="padding:8px 0;color:#9ca3af;font-size:13px">Event</td>
+            <td style="padding:8px 0;color:#111827;font-weight:600;text-align:right">${event.title}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#9ca3af;font-size:13px">Date</td>
+            <td style="padding:8px 0;color:#111827;text-align:right;font-size:13px">${dateStr}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#9ca3af;font-size:13px">Location</td>
+            <td style="padding:8px 0;color:#111827;text-align:right;font-size:13px">${event.location}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#9ca3af;font-size:13px">Status</td>
+            <td style="padding:8px 0;color:#ef4444;font-weight:600;text-align:right">Cancelled</td>
+          </tr>
+        </table>
+      </div>
+      <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">
+        If you paid for a ticket, please contact the event organizer for a refund.
+      </p>
+      ${button('Browse Other Events', `${clientUrl}/events`)}
+      <p style="color:#9ca3af;font-size:12px;margin:16px 0 0">We apologize for the inconvenience.</p>
+    `);
+    await this.send(email, `Event Cancelled: ${event.title}`, html);
+  }
+
   static async sendWaitlistNotification(
     email: string,
     firstName: string,

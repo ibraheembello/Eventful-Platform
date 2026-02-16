@@ -414,6 +414,9 @@ export default function Events() {
             {events.map((event) => {
               const soldOut = (event._count?.tickets || 0) >= event.capacity;
               const almostSoldOut = (event._count?.tickets || 0) / event.capacity > 0.8;
+              const wasRecentlyUpdated = event.updatedAt && event.createdAt &&
+                (Date.now() - new Date(event.updatedAt).getTime() < 48 * 60 * 60 * 1000) &&
+                (new Date(event.updatedAt).getTime() - new Date(event.createdAt).getTime() > 5 * 60 * 1000);
 
               return (
                 <Link
@@ -474,6 +477,13 @@ export default function Events() {
                       <div className="absolute bottom-3 right-3">
                         <div className="px-3 py-1 rounded-full bg-orange-500/90 text-white text-xs font-semibold">
                           Almost Full
+                        </div>
+                      </div>
+                    )}
+                    {!soldOut && !almostSoldOut && wasRecentlyUpdated && (
+                      <div className="absolute bottom-3 right-3">
+                        <div className="px-3 py-1 rounded-full bg-indigo-500/90 text-white text-xs font-semibold">
+                          Updated
                         </div>
                       </div>
                     )}

@@ -335,11 +335,13 @@ export class EventService {
     await Cache.delPattern('events:*');
 
     // Notify attendees if meaningful fields changed (fire and forget)
+    let notifiedCount = 0;
     if (changes.length > 0) {
+      notifiedCount = await prisma.ticket.count({ where: { eventId: id, status: 'ACTIVE' } });
       this.notifyAttendees(id, updated, changes).catch(() => {});
     }
 
-    return updated;
+    return { ...updated, notifiedCount };
   }
 
   private static async notifyAttendees(
@@ -373,10 +375,28 @@ export class EventService {
       throw ApiError.forbidden('You can only delete your own events');
     }
 
+    // Fetch active ticket holders before deletion for cancellation emails
+    const tickets = await prisma.ticket.findMany({
+      where: { eventId: id, status: 'ACTIVE' },
+      select: { user: { select: { email: true, firstName: true } } },
+    });
+
     await prisma.event.delete({ where: { id } });
     await Cache.delPattern('events:*');
 
-    return { message: 'Event deleted successfully' };
+    // Fire-and-forget cancellation emails
+    const notifiedCount = tickets.length;
+    if (notifiedCount > 0) {
+      for (const ticket of tickets) {
+        EmailService.sendEventCancellation(
+          ticket.user.email,
+          ticket.user.firstName,
+          event,
+        ).catch(() => {});
+      }
+    }
+
+    return { message: 'Event deleted successfully', notifiedCount };
   }
 
   static async toggleBookmark(userId: string, eventId: string) {
@@ -643,6 +663,46 @@ export class EventService {
       where: { eventId },
       orderBy: { order: 'asc' },
     });
+  }
+
+  static async reorderImages(eventId: string, creatorId: string, imageIds: string[]) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only reorder images for your own events');
+
+    // Validate all IDs belong to this event
+    const images = await prisma.eventImage.findMany({ where: { eventId } });
+    const existingIds = new Set(images.map((img) => img.id));
+    for (const id of imageIds) {
+      if (!existingIds.has(id)) throw ApiError.badRequest(`Image ${id} does not belong to this event`);
+    }
+
+    // Update order by array index
+    await Promise.all(
+      imageIds.map((id, index) =>
+        prisma.eventImage.update({ where: { id }, data: { order: index } })
+      )
+    );
+
+    await Cache.delPattern(`events:${eventId}`);
+    return prisma.eventImage.findMany({ where: { eventId }, orderBy: { order: 'asc' } });
+  }
+
+  static async updateImage(imageId: string, eventId: string, creatorId: string, caption?: string | null) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only update images for your own events');
+
+    const image = await prisma.eventImage.findFirst({ where: { id: imageId, eventId } });
+    if (!image) throw ApiError.notFound('Image not found');
+
+    const updated = await prisma.eventImage.update({
+      where: { id: imageId },
+      data: { caption: caption ?? null },
+    });
+
+    await Cache.delPattern(`events:${eventId}`);
+    return updated;
   }
 
   static async getShareLinks(eventId: string): Promise<ShareLinks> {
