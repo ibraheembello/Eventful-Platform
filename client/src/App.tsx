@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Events from './pages/Events';
@@ -37,8 +38,8 @@ function App() {
           <Route path="/register" element={<Register />} />
 
           <Route element={<Layout />}>
-            <Route path="/events" element={<Events />} />
-            <Route path="/events/:id" element={<EventDetail />} />
+            <Route path="/events" element={<ErrorBoundary><Events /></ErrorBoundary>} />
+            <Route path="/events/:id" element={<ErrorBoundary><EventDetail /></ErrorBoundary>} />
 
             <Route path="/tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Reminders /></ProtectedRoute>} />
@@ -49,7 +50,7 @@ function App() {
             <Route path="/events/:id/attendees" element={<ProtectedRoute roles={['CREATOR']}><AttendeeList /></ProtectedRoute>} />
             <Route path="/promo-codes" element={<ProtectedRoute roles={['CREATOR']}><PromoCodes /></ProtectedRoute>} />
             <Route path="/saved" element={<ProtectedRoute><SavedEvents /></ProtectedRoute>} />
-            <Route path="/waitlists" element={<ProtectedRoute><MyWaitlists /></ProtectedRoute>} />
+            <Route path="/waitlists" element={<ProtectedRoute><ErrorBoundary><MyWaitlists /></ErrorBoundary></ProtectedRoute>} />
             <Route path="/waitlist" element={<Navigate to="/waitlists" replace />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute roles={['CREATOR']}><Analytics /></ProtectedRoute>} />

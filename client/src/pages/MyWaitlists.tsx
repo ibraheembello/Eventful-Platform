@@ -13,6 +13,7 @@ import {
 export default function MyWaitlists() {
   const [entries, setEntries] = useState<WaitlistEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -24,10 +25,15 @@ export default function MyWaitlists() {
   const fetchWaitlists = async () => {
     try {
       setLoading(true);
+      setError(null);
       const res = await api.get('/events/waitlists', { params: { page, limit: 12 } });
-      setEntries(res.data.data?.entries || res.data.data || []);
-      setTotalPages(res.data.pagination?.totalPages || 1);
-    } catch {
+      const data = res.data?.data;
+      const list = Array.isArray(data) ? data : (Array.isArray(data?.entries) ? data.entries : []);
+      setEntries(list);
+      setTotalPages(res.data?.pagination?.totalPages || 1);
+    } catch (err) {
+      console.error('Waitlists fetch error:', err);
+      setError('Failed to load waitlists. Please try again.');
       toast.error('Failed to load waitlists');
     } finally {
       setLoading(false);
@@ -66,7 +72,21 @@ export default function MyWaitlists() {
         <p className="text-[rgb(var(--text-secondary))] mt-1">Events you're waiting for a spot on</p>
       </div>
 
-      {entries.length === 0 ? (
+      {error ? (
+        <div className="glass border border-red-200 dark:border-red-800 rounded-2xl p-8 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <HiOutlineBell className="w-8 h-8 text-red-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-[rgb(var(--text-primary))] mb-2">Unable to Load Waitlists</h3>
+          <p className="text-sm text-[rgb(var(--text-secondary))] mb-4">{error}</p>
+          <button
+            onClick={() => fetchWaitlists()}
+            className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      ) : entries.length === 0 ? (
         <div className="space-y-8">
           {/* Hero empty state */}
           <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl overflow-hidden">
