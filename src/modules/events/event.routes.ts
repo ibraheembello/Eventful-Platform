@@ -235,6 +235,61 @@ router.get('/attending', authenticate, authorize('EVENTEE', 'CREATOR'), EventCon
 
 /**
  * @swagger
+ * /events/series/{seriesId}:
+ *   get:
+ *     summary: Get all events in a series (public)
+ *     tags: [Events]
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: seriesId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Series events
+ *       404:
+ *         description: Series not found
+ */
+router.get('/series/:seriesId', EventController.getSeriesEvents);
+
+/**
+ * @swagger
+ * /events/series/{seriesId}:
+ *   delete:
+ *     summary: Delete an entire event series (Creator only)
+ *     tags: [Events]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: seriesId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Series deleted
+ *       403:
+ *         description: Can only delete own series
+ *       404:
+ *         description: Series not found
+ */
+router.delete('/series/:seriesId', authenticate, authorize('CREATOR'), EventController.deleteSeries);
+
+/**
+ * @swagger
  * /events/{id}:
  *   get:
  *     summary: Get event by ID

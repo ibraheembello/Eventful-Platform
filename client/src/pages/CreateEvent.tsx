@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 import type { EventImage } from '../types';
-import { HiOutlinePhotograph, HiOutlineUpload, HiOutlineLink, HiX, HiOutlineTrash, HiOutlinePlus } from 'react-icons/hi';
+import { HiOutlinePhotograph, HiOutlineUpload, HiOutlineLink, HiX, HiOutlineTrash, HiOutlinePlus, HiOutlineRefresh } from 'react-icons/hi';
 
 const CATEGORIES = ['Music', 'Technology', 'Art', 'Entertainment', 'Sports', 'Education', 'Business', 'Food & Drink', 'Health', 'Other'];
 
@@ -25,6 +25,11 @@ export default function CreateEvent() {
     defaultReminderValue: '',
     defaultReminderUnit: 'HOURS',
   });
+
+  // Recurring event state
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrencePattern, setRecurrencePattern] = useState<'WEEKLY' | 'BIWEEKLY' | 'MONTHLY'>('WEEKLY');
+  const [recurrenceOccurrences, setRecurrenceOccurrences] = useState(4);
 
   // Image upload state
   const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload');
@@ -47,6 +52,22 @@ export default function CreateEvent() {
   // Caption editing state
   const [editingCaptionId, setEditingCaptionId] = useState<string | null>(null);
   const [editingCaptionText, setEditingCaptionText] = useState('');
+
+  // Preview dates for recurring events
+  const previewDates = useMemo(() => {
+    if (!isRecurring || !form.date) return [];
+    const base = new Date(form.date);
+    if (isNaN(base.getTime())) return [];
+    const dates: Date[] = [];
+    for (let i = 0; i < recurrenceOccurrences; i++) {
+      const d = new Date(base);
+      if (recurrencePattern === 'WEEKLY') d.setDate(d.getDate() + i * 7);
+      else if (recurrencePattern === 'BIWEEKLY') d.setDate(d.getDate() + i * 14);
+      else d.setMonth(d.getMonth() + i);
+      dates.push(d);
+    }
+    return dates;
+  }, [isRecurring, form.date, recurrencePattern, recurrenceOccurrences]);
 
   useEffect(() => {
     if (isEdit) {
@@ -242,6 +263,14 @@ export default function CreateEvent() {
         payload.defaultReminderUnit = form.defaultReminderUnit;
       }
 
+      // Add recurrence data if creating a recurring event
+      if (!isEdit && isRecurring) {
+        payload.recurrence = {
+          pattern: recurrencePattern,
+          occurrences: recurrenceOccurrences,
+        };
+      }
+
       if (isEdit) {
         const res = await api.put(`/events/${id}`, payload);
         const notifiedCount = res.data.data?.notifiedCount || 0;
@@ -252,6 +281,11 @@ export default function CreateEvent() {
         }
       } else {
         const res = await api.post('/events', payload);
+        if (res.data.data?.series) {
+          toast.success(`Series created with ${res.data.data.events.length} events!`);
+          navigate(`/events/series/${res.data.data.series.id}`);
+          return;
+        }
         toast.success('Event created!');
         navigate(`/events/${res.data.data.id}`);
         return;
@@ -508,6 +542,82 @@ export default function CreateEvent() {
               </select>
             </div>
           </div>
+
+          {/* Recurring Event Toggle - Create mode only */}
+          {!isEdit && (
+            <div className="border-t border-[rgb(var(--border-primary))] pt-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <HiOutlineRefresh className="w-4 h-4 text-indigo-500" />
+                  <p className="text-sm font-medium text-[rgb(var(--text-secondary))]">Recurring Event</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsRecurring(!isRecurring)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    isRecurring ? 'bg-indigo-600' : 'bg-[rgb(var(--bg-tertiary))]'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      isRecurring ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {isRecurring && (
+                <div className="space-y-3 pl-6 border-l-2 border-indigo-200 dark:border-indigo-800">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="recurrencePattern" className="block text-xs font-medium text-[rgb(var(--text-secondary))] mb-1">Pattern</label>
+                      <select
+                        id="recurrencePattern"
+                        value={recurrencePattern}
+                        onChange={(e) => setRecurrencePattern(e.target.value as 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY')}
+                        className="w-full px-4 py-2.5 border border-[rgb(var(--border-primary))] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))]"
+                      >
+                        <option value="WEEKLY">Weekly</option>
+                        <option value="BIWEEKLY">Biweekly</option>
+                        <option value="MONTHLY">Monthly</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="recurrenceOccurrences" className="block text-xs font-medium text-[rgb(var(--text-secondary))] mb-1">Occurrences</label>
+                      <input
+                        id="recurrenceOccurrences"
+                        type="number"
+                        min={2}
+                        max={52}
+                        value={recurrenceOccurrences}
+                        onChange={(e) => setRecurrenceOccurrences(Math.max(2, Math.min(52, parseInt(e.target.value) || 2)))}
+                        className="w-full px-4 py-2.5 border border-[rgb(var(--border-primary))] rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date Preview */}
+                  {previewDates.length > 0 && (
+                    <div className="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/40">
+                      <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300 mb-2">
+                        {previewDates.length} events will be created:
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {previewDates.map((d, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-100 dark:bg-indigo-800/40 text-indigo-700 dark:text-indigo-300"
+                          >
+                            {d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Gallery Images - Edit mode only */}
           {isEdit && (

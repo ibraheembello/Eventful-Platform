@@ -26,6 +26,7 @@ import GoogleCallback from './pages/GoogleCallback';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Categories from './pages/Categories';
+import SeriesDetail from './pages/SeriesDetail';
 
 function HomeRoute() {
   return <LandingPage />;
@@ -49,6 +50,7 @@ function App() {
           <Route element={<Layout />}>
             <Route path="/categories" element={<Categories />} />
             <Route path="/events" element={<ErrorBoundary><Events /></ErrorBoundary>} />
+            <Route path="/events/series/:seriesId" element={<ErrorBoundary><SeriesDetail /></ErrorBoundary>} />
             <Route path="/events/:id" element={<ErrorBoundary><EventDetail /></ErrorBoundary>} />
 
             <Route path="/tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />

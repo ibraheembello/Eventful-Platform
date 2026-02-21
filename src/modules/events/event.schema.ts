@@ -5,6 +5,11 @@ const imageUrlSchema = z.string().refine(
   'Must be a valid URL or an uploaded image path'
 );
 
+const recurrenceSchema = z.object({
+  pattern: z.enum(['WEEKLY', 'BIWEEKLY', 'MONTHLY']),
+  occurrences: z.number().int().min(2, 'At least 2 occurrences required').max(52, 'Maximum 52 occurrences'),
+});
+
 export const createEventSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
@@ -16,6 +21,7 @@ export const createEventSchema = z.object({
   category: z.string().optional(),
   defaultReminderValue: z.number().int().min(1).optional(),
   defaultReminderUnit: z.enum(['MINUTES', 'HOURS', 'DAYS', 'WEEKS']).optional(),
+  recurrence: recurrenceSchema.optional(),
 });
 
 export const updateEventSchema = z.object({

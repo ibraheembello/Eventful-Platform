@@ -1050,6 +1050,12 @@ export default function LandingPage() {
                 description: 'Explore events by category — Music, Tech, Sports, Art, and more.',
                 color: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400',
               },
+              {
+                icon: <HiOutlineClock className="w-6 h-6" />,
+                title: 'Recurring Events',
+                description: 'Create weekly, biweekly, or monthly event series with a single form.',
+                color: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400',
+              },
             ].map((feature) => (
               <div
                 key={feature.title}

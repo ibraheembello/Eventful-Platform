@@ -5,7 +5,7 @@ import type { Event, ShareLinks, Comment } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineShare, HiOutlinePencil, HiOutlineTrash, HiOutlineClock, HiOutlineTag, HiOutlineBookmark, HiBookmark, HiOutlineBell, HiOutlineStar, HiStar, HiOutlinePhotograph, HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineX, HiOutlineInformationCircle } from 'react-icons/hi';
+import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineShare, HiOutlinePencil, HiOutlineTrash, HiOutlineClock, HiOutlineTag, HiOutlineBookmark, HiBookmark, HiOutlineBell, HiOutlineStar, HiStar, HiOutlinePhotograph, HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineX, HiOutlineInformationCircle, HiOutlineRefresh } from 'react-icons/hi';
 import { FaTwitter, FaFacebook, FaLinkedin, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
 
 export default function EventDetail() {
@@ -536,6 +536,23 @@ export default function EventDetail() {
             }
             return null;
           })()}
+
+          {/* Series Banner */}
+          {event.seriesId && event.series && (
+            <Link
+              to={`/events/series/${event.seriesId}`}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors"
+            >
+              <HiOutlineRefresh className="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+              <p className="text-sm text-indigo-700 dark:text-indigo-300">
+                Part of a {(event.series.recurrencePattern || '').toLowerCase()} series
+                {event.seriesOccurrence && event.series.totalOccurrences && (
+                  <> &mdash; Occurrence {event.seriesOccurrence} of {event.series.totalOccurrences}</>
+                )}
+              </p>
+              <span className="ml-auto text-xs text-indigo-500 dark:text-indigo-400 font-medium">View Series &rarr;</span>
+            </Link>
+          )}
 
           {/* Quick Info - Mobile only */}
           <div className="lg:hidden grid grid-cols-1 sm:grid-cols-3 gap-4">
