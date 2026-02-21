@@ -149,13 +149,20 @@ export class AuthService {
       given_name = payload.given_name;
       family_name = payload.family_name;
       picture = payload.picture;
-    } catch {
+    } catch (idTokenErr) {
+      console.log('[Google Auth] ID token verification failed:', (idTokenErr as Error).message);
+      console.log('[Google Auth] Credential length:', input.credential?.length, 'starts with:', input.credential?.substring(0, 20));
       // Credential might be an access token from implicit flow — call userinfo
       try {
         const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
           headers: { Authorization: `Bearer ${input.credential}` },
         });
-        if (!res.ok) throw new Error('userinfo failed');
+        console.log('[Google Auth] Userinfo response status:', res.status);
+        if (!res.ok) {
+          const errText = await res.text();
+          console.log('[Google Auth] Userinfo error body:', errText);
+          throw new Error('userinfo failed');
+        }
         const info = await res.json() as { sub: string; email?: string; given_name?: string; family_name?: string; picture?: string };
         if (!info.email) throw new Error('No email');
         googleId = info.sub;
@@ -163,7 +170,8 @@ export class AuthService {
         given_name = info.given_name;
         family_name = info.family_name;
         picture = info.picture;
-      } catch {
+      } catch (userinfoErr) {
+        console.log('[Google Auth] Userinfo call failed:', (userinfoErr as Error).message);
         throw ApiError.unauthorized('Invalid Google credential');
       }
     }
