@@ -136,44 +136,74 @@ export class AuthService {
     let family_name: string | undefined;
     let picture: string | undefined;
 
-    // Try as ID token first, then as access token
-    try {
-      const ticket = await googleClient.verifyIdToken({
-        idToken: input.credential,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-      const payload = ticket.getPayload();
-      if (!payload || !payload.email) throw new Error('No payload');
-      googleId = payload.sub;
-      email = payload.email;
-      given_name = payload.given_name;
-      family_name = payload.family_name;
-      picture = payload.picture;
-    } catch (idTokenErr) {
-      console.log('[Google Auth] ID token verification failed:', (idTokenErr as Error).message);
-      console.log('[Google Auth] Credential length:', input.credential?.length, 'starts with:', input.credential?.substring(0, 20));
-      // Credential might be an access token from implicit flow — call userinfo
+    if (input.code) {
+      // Authorization code flow — exchange code for tokens
       try {
-        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${input.credential}` },
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: input.code,
+            client_id: process.env.GOOGLE_CLIENT_ID,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET,
+            redirect_uri: `${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/google/callback`,
+            grant_type: 'authorization_code',
+          }),
         });
-        console.log('[Google Auth] Userinfo response status:', res.status);
-        if (!res.ok) {
-          const errText = await res.text();
-          console.log('[Google Auth] Userinfo error body:', errText);
-          throw new Error('userinfo failed');
+        const tokenData = await tokenResponse.json() as { access_token?: string; id_token?: string; error?: string };
+        if (tokenData.error || !tokenData.access_token) {
+          throw new Error(tokenData.error || 'Token exchange failed');
         }
+        // Use the access token to get user info
+        const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenData.access_token}` },
+        });
+        if (!res.ok) throw new Error('userinfo failed');
         const info = await res.json() as { sub: string; email?: string; given_name?: string; family_name?: string; picture?: string };
-        if (!info.email) throw new Error('No email');
+        if (!info.email) throw new Error('No email from Google');
         googleId = info.sub;
         email = info.email;
         given_name = info.given_name;
         family_name = info.family_name;
         picture = info.picture;
-      } catch (userinfoErr) {
-        console.log('[Google Auth] Userinfo call failed:', (userinfoErr as Error).message);
-        throw ApiError.unauthorized('Invalid Google credential');
+      } catch (err) {
+        console.log('[Google Auth] Code exchange failed:', (err as Error).message);
+        throw ApiError.unauthorized('Failed to authenticate with Google');
       }
+    } else if (input.credential) {
+      // Credential flow — verify ID token or access token
+      try {
+        const ticket = await googleClient.verifyIdToken({
+          idToken: input.credential,
+          audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        if (!payload || !payload.email) throw new Error('No payload');
+        googleId = payload.sub;
+        email = payload.email;
+        given_name = payload.given_name;
+        family_name = payload.family_name;
+        picture = payload.picture;
+      } catch {
+        // Credential might be an access token — call userinfo
+        try {
+          const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${input.credential}` },
+          });
+          if (!res.ok) throw new Error('userinfo failed');
+          const info = await res.json() as { sub: string; email?: string; given_name?: string; family_name?: string; picture?: string };
+          if (!info.email) throw new Error('No email');
+          googleId = info.sub;
+          email = info.email;
+          given_name = info.given_name;
+          family_name = info.family_name;
+          picture = info.picture;
+        } catch {
+          throw ApiError.unauthorized('Invalid Google credential');
+        }
+      }
+    } else {
+      throw ApiError.badRequest('Either credential or code is required');
     }
 
     // Try to find existing user by googleId or email
