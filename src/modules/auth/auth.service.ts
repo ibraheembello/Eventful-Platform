@@ -1,9 +1,10 @@
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import prisma from '../../config/database';
 import { ApiError } from '../../utils/apiError';
-import { RegisterInput, LoginInput, UpdateProfileInput, GoogleAuthInput, GitHubAuthInput } from './auth.schema';
+import { RegisterInput, LoginInput, UpdateProfileInput, GoogleAuthInput, GitHubAuthInput, ForgotPasswordInput, ResetPasswordInput } from './auth.schema';
 import { AuthPayload } from '../../middleware/auth';
 import { EmailService } from '../../utils/emailService';
 
@@ -353,6 +354,68 @@ export class AuthService {
 
     const { password: _, ...userWithoutPassword } = user;
     return { user: userWithoutPassword, ...tokens };
+  }
+
+  static async forgotPassword(input: ForgotPasswordInput) {
+    const user = await prisma.user.findUnique({
+      where: { email: input.email },
+    });
+
+    // Always return same message to prevent email enumeration
+    const message = 'If an account exists with that email, a reset link has been sent.';
+
+    // Don't send email if user not found or social-only (no password)
+    if (!user || !user.password) {
+      return { message };
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetToken: hashedToken,
+        resetTokenExpiresAt: expiresAt,
+      },
+    });
+
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const resetUrl = `${clientUrl}/reset-password?token=${rawToken}`;
+
+    // Fire and forget
+    EmailService.sendPasswordReset(user.email, user.firstName, resetUrl).catch(() => {});
+
+    return { message };
+  }
+
+  static async resetPassword(input: ResetPasswordInput) {
+    const hashedToken = crypto.createHash('sha256').update(input.token).digest('hex');
+
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: hashedToken,
+        resetTokenExpiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!user) {
+      throw ApiError.badRequest('Invalid or expired reset token');
+    }
+
+    const hashedPassword = await bcrypt.hash(input.password, 12);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiresAt: null,
+      },
+    });
+
+    return { message: 'Password reset successfully. You can now log in.' };
   }
 
   static async refreshToken(refreshToken: string) {

@@ -211,6 +211,24 @@ export class EmailService {
     await this.send(email, `Event Cancelled: ${event.title}`, html);
   }
 
+  static async sendPasswordReset(email: string, firstName: string, resetUrl: string) {
+    const html = baseTemplate('Reset Your Password', `
+      <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">Hi ${firstName},</p>
+      <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">
+        We received a request to reset your password for your Eventful account. Click the button below to set a new password:
+      </p>
+      ${button('Reset Password', resetUrl)}
+      <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">
+        This link will expire in <strong style="color:#111827">1 hour</strong>. If you didn't request a password reset, you can safely ignore this email — your password will remain unchanged.
+      </p>
+      <p style="color:#9ca3af;font-size:12px;margin:16px 0 0;line-height:1.5">
+        If the button doesn't work, copy and paste this URL into your browser:<br/>
+        <a href="${resetUrl}" style="color:#059669;word-break:break-all">${resetUrl}</a>
+      </p>
+    `);
+    await this.send(email, 'Reset Your Password — Eventful', html);
+  }
+
   static async sendWaitlistNotification(
     email: string,
     firstName: string,

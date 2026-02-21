@@ -23,6 +23,8 @@ import PromoCodes from './pages/PromoCodes';
 import MyWaitlists from './pages/MyWaitlists';
 import GitHubCallback from './pages/GitHubCallback';
 import GoogleCallback from './pages/GoogleCallback';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function HomeRoute() {
   return <LandingPage />;
@@ -38,6 +40,8 @@ function App() {
           <Route path="/" element={<HomeRoute />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/auth/github/callback" element={<GitHubCallback />} />
           <Route path="/auth/google/callback" element={<GoogleCallback />} />
 

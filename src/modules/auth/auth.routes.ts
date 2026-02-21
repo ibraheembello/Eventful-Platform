@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { AuthController } from './auth.controller';
 import { validate } from '../../middleware/validate';
-import { registerSchema, loginSchema, updateProfileSchema, googleAuthSchema, githubAuthSchema } from './auth.schema';
+import { registerSchema, loginSchema, updateProfileSchema, googleAuthSchema, githubAuthSchema, forgotPasswordSchema, resetPasswordSchema } from './auth.schema';
 import { authenticate } from '../../middleware/auth';
 import { authLimiter } from '../../middleware/rateLimiter';
 
@@ -113,6 +113,61 @@ router.post('/register', authLimiter, validate(registerSchema), AuthController.r
  *         description: Invalid credentials
  */
 router.post('/login', authLimiter, validate(loginSchema), AuthController.login);
+
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Request a password reset link
+ *     tags: [Authentication]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *     responses:
+ *       200:
+ *         description: Reset link sent (always returns success to prevent email enumeration)
+ */
+router.post('/forgot-password', authLimiter, validate(forgotPasswordSchema), AuthController.forgotPassword);
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password using token from email
+ *     tags: [Authentication]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Reset token from the email link
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 description: New password
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       400:
+ *         description: Invalid or expired reset token
+ */
+router.post('/reset-password', authLimiter, validate(resetPasswordSchema), AuthController.resetPassword);
 
 /**
  * @swagger
