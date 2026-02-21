@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useGoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
-import { HiOutlineMoon, HiOutlineSun, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
+import { HiOutlineMoon, HiOutlineSun, HiOutlineEye, HiOutlineEyeOff, HiX } from 'react-icons/hi';
 import { FcGoogle } from 'react-icons/fc';
 import { FaGithub } from 'react-icons/fa';
 
@@ -17,6 +17,8 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [pendingCredential, setPendingCredential] = useState<{ provider: 'google' | 'github'; credential: string } | null>(null);
+  const [showRoleModal, setShowRoleModal] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,21 +34,46 @@ export default function Login() {
     }
   };
 
+  const handleSocialLoginWithRoleFallback = async (provider: 'google' | 'github', credential: string) => {
+    setLoading(true);
+    try {
+      await socialLogin(provider, { credential });
+      toast.success('Welcome back!');
+      navigate('/events');
+    } catch (err: any) {
+      const msg: string = err.response?.data?.message || '';
+      if (msg.toLowerCase().includes('role is required') || msg.toLowerCase().includes('sign up first')) {
+        // New user — show role selection modal
+        setPendingCredential({ provider, credential });
+        setShowRoleModal(true);
+      } else {
+        toast.error(msg || `${provider === 'google' ? 'Google' : 'GitHub'} sign-in failed`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRoleSelect = async (role: string) => {
+    if (!pendingCredential) return;
+    setShowRoleModal(false);
+    setLoading(true);
+    try {
+      await socialLogin(pendingCredential.provider, { credential: pendingCredential.credential, role });
+      toast.success('Account created successfully!');
+      navigate('/events');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Sign-up failed');
+    } finally {
+      setLoading(false);
+      setPendingCredential(null);
+    }
+  };
+
   const googleLogin = useGoogleLogin({
     flow: 'implicit',
     onSuccess: async (tokenResponse) => {
-      setLoading(true);
-      try {
-        // Exchange the access token for an ID token via Google's userinfo endpoint
-        // then send the access_token to our backend which will verify via Google API
-        await socialLogin('google', { credential: tokenResponse.access_token });
-        toast.success('Welcome back!');
-        navigate('/events');
-      } catch (err: any) {
-        toast.error(err.response?.data?.message || 'Google sign-in failed');
-      } finally {
-        setLoading(false);
-      }
+      await handleSocialLoginWithRoleFallback('google', tokenResponse.access_token);
     },
     onError: () => toast.error('Google sign-in failed'),
   });
@@ -160,6 +187,47 @@ export default function Login() {
           </p>
         </div>
       </div>
+
+      {/* Role Selection Modal for new social login users */}
+      {showRoleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm bg-[rgb(var(--bg-primary))] border border-[rgb(var(--border-primary))] rounded-2xl p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-[rgb(var(--text-primary))]">Welcome to Eventful!</h2>
+              <button
+                type="button"
+                onClick={() => { setShowRoleModal(false); setPendingCredential(null); }}
+                className="p-1 text-[rgb(var(--text-tertiary))] hover:text-[rgb(var(--text-primary))] transition-colors"
+              >
+                <HiX className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-[rgb(var(--text-secondary))] mb-5">
+              It looks like you're new here. How would you like to use Eventful?
+            </p>
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => handleRoleSelect('EVENTEE')}
+                disabled={loading}
+                className="w-full px-4 py-3 rounded-lg border border-[rgb(var(--border-primary))] hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition text-left disabled:opacity-50"
+              >
+                <span className="font-semibold text-[rgb(var(--text-primary))]">Attend Events</span>
+                <p className="text-xs text-[rgb(var(--text-secondary))] mt-0.5">Discover and buy tickets to events</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRoleSelect('CREATOR')}
+                disabled={loading}
+                className="w-full px-4 py-3 rounded-lg border border-[rgb(var(--border-primary))] hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition text-left disabled:opacity-50"
+              >
+                <span className="font-semibold text-[rgb(var(--text-primary))]">Create Events</span>
+                <p className="text-xs text-[rgb(var(--text-secondary))] mt-0.5">Host and manage your own events</p>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

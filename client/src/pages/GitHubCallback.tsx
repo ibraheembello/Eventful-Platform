@@ -2,12 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import api from '../lib/api';
+import { HiX } from 'react-icons/hi';
 
 export default function GitHubCallback() {
   const { socialLogin } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [error, setError] = useState('');
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [githubAccessToken, setGithubAccessToken] = useState('');
+  const [loading, setLoading] = useState(false);
   const processed = useRef(false);
 
   useEffect(() => {
@@ -37,10 +42,22 @@ export default function GitHubCallback() {
     const payload: Record<string, string> = { code };
     if (role) payload.role = role;
 
-    socialLogin('github', payload)
-      .then(() => {
-        toast.success(role ? 'Account created successfully!' : 'Welcome back!');
-        navigate('/events');
+    // Call backend directly to check for needsRole response
+    api.post('/auth/github', payload)
+      .then((res) => {
+        const data = res.data.data;
+        if (data.needsRole) {
+          // New user without role — show role selection
+          setGithubAccessToken(data.githubAccessToken);
+          setShowRoleModal(true);
+        } else {
+          // Existing user or new user with role — complete login
+          localStorage.setItem('accessToken', data.accessToken);
+          localStorage.setItem('refreshToken', data.refreshToken);
+          // Trigger auth context reload by navigating
+          toast.success(role ? 'Account created successfully!' : 'Welcome back!');
+          window.location.href = '/events';
+        }
       })
       .catch((err: any) => {
         const message = err.response?.data?.message || 'GitHub login failed';
@@ -50,10 +67,61 @@ export default function GitHubCallback() {
       });
   }, [searchParams, socialLogin, navigate]);
 
+  const handleRoleSelect = async (role: string) => {
+    setShowRoleModal(false);
+    setLoading(true);
+    try {
+      await socialLogin('github', { accessToken: githubAccessToken, role });
+      toast.success('Account created successfully!');
+      navigate('/events');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Sign-up failed');
+      navigate('/register');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-[rgb(var(--bg-secondary))]">
       <div className="text-center">
-        {error ? (
+        {showRoleModal ? (
+          <div className="w-full max-w-sm bg-[rgb(var(--bg-primary))] border border-[rgb(var(--border-primary))] rounded-2xl p-6 shadow-xl mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-[rgb(var(--text-primary))]">Welcome to Eventful!</h2>
+              <button
+                type="button"
+                onClick={() => { setShowRoleModal(false); navigate('/login'); }}
+                className="p-1 text-[rgb(var(--text-tertiary))] hover:text-[rgb(var(--text-primary))] transition-colors"
+              >
+                <HiX className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-[rgb(var(--text-secondary))] mb-5">
+              It looks like you're new here. How would you like to use Eventful?
+            </p>
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => handleRoleSelect('EVENTEE')}
+                disabled={loading}
+                className="w-full px-4 py-3 rounded-lg border border-[rgb(var(--border-primary))] hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition text-left disabled:opacity-50"
+              >
+                <span className="font-semibold text-[rgb(var(--text-primary))]">Attend Events</span>
+                <p className="text-xs text-[rgb(var(--text-secondary))] mt-0.5">Discover and buy tickets to events</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleRoleSelect('CREATOR')}
+                disabled={loading}
+                className="w-full px-4 py-3 rounded-lg border border-[rgb(var(--border-primary))] hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition text-left disabled:opacity-50"
+              >
+                <span className="font-semibold text-[rgb(var(--text-primary))]">Create Events</span>
+                <p className="text-xs text-[rgb(var(--text-secondary))] mt-0.5">Host and manage your own events</p>
+              </button>
+            </div>
+          </div>
+        ) : error ? (
           <div>
             <p className="text-red-500 text-lg font-medium mb-2">{error}</p>
             <p className="text-[rgb(var(--text-secondary))] text-sm">Redirecting...</p>
