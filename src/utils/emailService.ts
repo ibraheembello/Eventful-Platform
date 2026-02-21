@@ -262,6 +262,33 @@ export class EmailService {
     await this.send(email, `Ticket Received: ${event.title}`, html);
   }
 
+  static async sendContactNotification(name: string, email: string, message: string) {
+    const adminEmail = process.env.ADMIN_EMAIL || 'belloibrahimolawale@gmail.com';
+    const html = baseTemplate('New Contact Message', `
+      <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">You have a new message from the Eventful contact form.</p>
+      <div style="background:#f9fafb;border-radius:12px;padding:20px;margin:16px 0">
+        <table style="width:100%;border-collapse:collapse">
+          <tr>
+            <td style="padding:8px 0;color:#9ca3af;font-size:13px">Name</td>
+            <td style="padding:8px 0;color:#111827;font-weight:600;text-align:right">${name}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#9ca3af;font-size:13px">Email</td>
+            <td style="padding:8px 0;color:#111827;text-align:right;font-size:13px">
+              <a href="mailto:${email}" style="color:#059669;text-decoration:none">${email}</a>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div style="background:#f9fafb;border-radius:12px;padding:20px;margin:16px 0">
+        <p style="color:#9ca3af;font-size:13px;margin:0 0 8px">Message</p>
+        <p style="color:#111827;line-height:1.6;margin:0;white-space:pre-wrap">${message}</p>
+      </div>
+      <p style="color:#9ca3af;font-size:12px;margin:16px 0 0">Reply directly to the sender at <a href="mailto:${email}" style="color:#059669">${email}</a></p>
+    `);
+    await this.send(adminEmail, `Eventful Contact: ${name}`, html);
+  }
+
   static async sendWaitlistNotification(
     email: string,
     firstName: string,

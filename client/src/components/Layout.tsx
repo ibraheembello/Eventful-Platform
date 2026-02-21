@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { HiOutlineTicket, HiOutlineBell, HiOutlineChartBar, HiOutlineCalendar, HiOutlineLogout, HiOutlineMenu, HiOutlineX, HiOutlineQrcode, HiOutlineMoon, HiOutlineSun, HiOutlineUserCircle, HiOutlineHome, HiOutlineBookmark, HiOutlineTag, HiOutlineClock, HiOutlineViewGrid, HiOutlineChevronDown, HiOutlineShieldCheck, HiOutlineTemplate } from 'react-icons/hi';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import api from '../lib/api';
+import ChatBot from './ChatBot';
 
 function NavDropdown({ label, icon, children }: { label: string; icon: React.ReactNode; children: (close: () => void) => React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -252,6 +253,7 @@ export default function Layout() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />
       </main>
+      <ChatBot />
     </div>
   );
 }

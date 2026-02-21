@@ -17,6 +17,7 @@ import {
 import api from '../lib/api';
 import type { Event } from '../types';
 import { format } from 'date-fns';
+import ChatBot from '../components/ChatBot';
 
 /* ─── Scroll Reveal Hook ─── */
 
@@ -542,6 +543,8 @@ export default function LandingPage() {
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [contactSent, setContactSent] = useState(false);
+  const [contactLoading, setContactLoading] = useState(false);
+  const [contactError, setContactError] = useState('');
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
 
   // Scroll reveal refs
@@ -582,11 +585,20 @@ export default function LandingPage() {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
-  const handleContactSubmit = (e: FormEvent) => {
+  const handleContactSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setContactSent(true);
-    setContactForm({ name: '', email: '', message: '' });
-    setTimeout(() => setContactSent(false), 4000);
+    setContactLoading(true);
+    setContactError('');
+    try {
+      await api.post('/contact', contactForm);
+      setContactSent(true);
+      setContactForm({ name: '', email: '', message: '' });
+      setTimeout(() => setContactSent(false), 5000);
+    } catch (err: any) {
+      setContactError(err.response?.data?.message || 'Failed to send message. Please try again.');
+    } finally {
+      setContactLoading(false);
+    }
   };
 
   return (
@@ -1117,6 +1129,18 @@ export default function LandingPage() {
                 description: 'Admin tools for user moderation, role management, and platform oversight.',
                 color: 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400',
               },
+              {
+                icon: <HiOutlineQrcode className="w-6 h-6" />,
+                title: 'QR Code Scanner',
+                description: 'Scan ticket QR codes with your camera for instant verification at the door.',
+                color: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400',
+              },
+              {
+                icon: <HiOutlineChatAlt2 className="w-6 h-6" />,
+                title: 'Help Chatbot',
+                description: 'Get instant answers to common questions with our built-in chatbot assistant.',
+                color: 'bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-600 dark:text-fuchsia-400',
+              },
             ].map((feature) => (
               <div
                 key={feature.title}
@@ -1409,14 +1433,21 @@ export default function LandingPage() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  disabled={contactLoading}
+                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Send Message
+                  {contactLoading ? 'Sending...' : 'Send Message'}
                 </button>
                 {contactSent && (
                   <div className="flex items-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl animate-[fadeIn_0.3s_ease-out]">
                     <HiOutlineCheck className="w-5 h-5 text-emerald-600 flex-shrink-0" />
                     <p className="text-sm text-emerald-700 dark:text-emerald-400">Message sent! We'll get back to you soon.</p>
+                  </div>
+                )}
+                {contactError && (
+                  <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl animate-[fadeIn_0.3s_ease-out]">
+                    <HiOutlineX className="w-5 h-5 text-red-600 flex-shrink-0" />
+                    <p className="text-sm text-red-700 dark:text-red-400">{contactError}</p>
                   </div>
                 )}
               </form>
@@ -1430,7 +1461,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-[rgb(var(--text-primary))] mb-1">Email Us</h4>
-                    <a href="mailto:hello@eventful-platform.com" className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline">hello@eventful-platform.com</a>
+                    <a href="mailto:belloibrahimolawale@gmail.com" className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline">belloibrahimolawale@gmail.com</a>
                   </div>
                 </div>
               </div>
@@ -1531,6 +1562,8 @@ export default function LandingPage() {
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Interactive Maps</span>
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Admin Panel</span>
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">CI/CD Pipeline</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">QR Code Scanner</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Help Chatbot</span>
               </div>
             </div>
             {/* Resources */}
@@ -1552,6 +1585,8 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      <ChatBot />
     </div>
   );
 }

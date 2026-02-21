@@ -22,6 +22,7 @@ import promoCodeRoutes from './modules/promoCodes/promo-code.routes';
 import inAppNotificationRoutes from './modules/inAppNotifications/in-app-notification.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import dashboardRoutes from './modules/dashboard/dashboard.routes';
+import contactRoutes from './modules/contact/contact.routes';
 
 dotenv.config();
 
@@ -80,6 +81,7 @@ app.use('/api/promo-codes', promoCodeRoutes);
 app.use('/api/notifications', inAppNotificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));

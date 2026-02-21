@@ -19,8 +19,8 @@
   --warning: 245 158 11;
 
   /* Glassmorphism */
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(226, 232, 240, 0.6);
+  --glass-bg: rgba(255, 255, 255, 0.95);
+  --glass-border: rgba(203, 213, 225, 0.8);
   --backdrop-blur: blur(12px);
 
   /* Shadows */
@@ -85,6 +85,11 @@ body {
   border: 1px solid var(--glass-border);
   -webkit-backdrop-filter: var(--backdrop-blur);
   backdrop-filter: var(--backdrop-blur);
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+}
+
+.dark .glass {
+  box-shadow: none;
 }
 
 .glass-light {
