@@ -1,7 +1,7 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { HiOutlineTicket, HiOutlineBell, HiOutlineChartBar, HiOutlineCalendar, HiOutlineLogout, HiOutlineMenu, HiOutlineX, HiOutlineQrcode, HiOutlineMoon, HiOutlineSun, HiOutlineUserCircle, HiOutlineHome, HiOutlineBookmark, HiOutlineTag, HiOutlineClock } from 'react-icons/hi';
+import { HiOutlineTicket, HiOutlineBell, HiOutlineChartBar, HiOutlineCalendar, HiOutlineLogout, HiOutlineMenu, HiOutlineX, HiOutlineQrcode, HiOutlineMoon, HiOutlineSun, HiOutlineUserCircle, HiOutlineHome, HiOutlineBookmark, HiOutlineTag, HiOutlineClock, HiOutlineViewGrid } from 'react-icons/hi';
 import { useState } from 'react';
 
 export default function Layout() {
@@ -28,6 +28,9 @@ export default function Layout() {
                 </Link>
                 <Link to="/events" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
                   <HiOutlineCalendar className="w-4 h-4" /> Events
+                </Link>
+                <Link to="/categories" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
+                  <HiOutlineViewGrid className="w-4 h-4" /> Categories
                 </Link>
                 {user && (
                   <>
@@ -112,6 +115,7 @@ export default function Layout() {
           <div className="md:hidden border-t border-[rgb(var(--border-primary))] px-4 py-3 space-y-2 bg-[rgb(var(--bg-primary))]">
             <Link to="/" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Home</Link>
             <Link to="/events" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Events</Link>
+            <Link to="/categories" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Categories</Link>
             {user ? (
               <>
                 <Link to="/tickets" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">My Tickets</Link>

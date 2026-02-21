@@ -40,6 +40,15 @@ export class EventController {
     }
   }
 
+  static async getCategoriesWithCounts(req: Request, res: Response, next: NextFunction) {
+    try {
+      const categories = await EventService.getCategoriesWithCounts();
+      ApiResponse.success(res, categories);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const event = await EventService.getById(param(req, 'id'));

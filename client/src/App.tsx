@@ -25,6 +25,7 @@ import GitHubCallback from './pages/GitHubCallback';
 import GoogleCallback from './pages/GoogleCallback';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import Categories from './pages/Categories';
 
 function HomeRoute() {
   return <LandingPage />;
@@ -46,6 +47,7 @@ function App() {
           <Route path="/auth/google/callback" element={<GoogleCallback />} />
 
           <Route element={<Layout />}>
+            <Route path="/categories" element={<Categories />} />
             <Route path="/events" element={<ErrorBoundary><Events /></ErrorBoundary>} />
             <Route path="/events/:id" element={<ErrorBoundary><EventDetail /></ErrorBoundary>} />
 
