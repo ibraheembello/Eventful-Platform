@@ -5,6 +5,7 @@ import { EmailService } from '../../utils/emailService';
 import { CreateEventInput, UpdateEventInput, CreateCommentInput, TicketTypeInput } from './event.schema';
 import { generateShareLinks, ShareLinks } from '../../utils/shareLink';
 import { InAppNotificationService } from '../inAppNotifications/in-app-notification.service';
+import { geocodeAddress } from '../../utils/geocode';
 
 export class EventService {
   static async create(creatorId: string, input: CreateEventInput) {
@@ -27,6 +28,18 @@ export class EventService {
     });
 
     await Cache.delPattern('events:*');
+
+    // Fire-and-forget geocode if lat/lng not provided
+    if (!event.latitude && !event.longitude && event.location) {
+      geocodeAddress(event.location).then((coords) => {
+        if (coords) {
+          prisma.event.update({
+            where: { id: event.id },
+            data: { latitude: coords.lat, longitude: coords.lng },
+          }).catch(() => {});
+        }
+      }).catch(() => {});
+    }
 
     return event;
   }
@@ -261,6 +274,50 @@ export class EventService {
 
     await Cache.set(cacheKey, categories, 300);
     return categories;
+  }
+
+  static async getNearby(lat: number, lng: number, radiusKm = 50, page = 1, limit = 10) {
+    const offset = (page - 1) * limit;
+
+    // Haversine formula via raw SQL
+    const events: any[] = await prisma.$queryRaw`
+      WITH nearby AS (
+        SELECT *,
+          (6371 * acos(
+            cos(radians(${lat})) * cos(radians(latitude)) *
+            cos(radians(longitude) - radians(${lng})) +
+            sin(radians(${lat})) * sin(radians(latitude))
+          )) AS distance
+        FROM events
+        WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+          AND status = 'PUBLISHED'
+      )
+      SELECT id, title, date, location, price, capacity, "imageUrl", category, latitude, longitude,
+             "creatorId", "createdAt", distance
+      FROM nearby
+      WHERE distance <= ${radiusKm}
+      ORDER BY distance ASC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
+    const countResult: any[] = await prisma.$queryRaw`
+      WITH nearby AS (
+        SELECT
+          (6371 * acos(
+            cos(radians(${lat})) * cos(radians(latitude)) *
+            cos(radians(longitude) - radians(${lng})) +
+            sin(radians(${lat})) * sin(radians(latitude))
+          )) AS distance
+        FROM events
+        WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+          AND status = 'PUBLISHED'
+      )
+      SELECT COUNT(*)::int AS total FROM nearby WHERE distance <= ${radiusKm}
+    `;
+
+    const total = countResult[0]?.total || 0;
+
+    return { events, total, page, limit };
   }
 
   static async getById(id: string, userId?: string) {

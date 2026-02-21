@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../lib/api';
 import type { Event, ShareLinks, Comment } from '../types';
@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineShare, HiOutlinePencil, HiOutlineTrash, HiOutlineClock, HiOutlineTag, HiOutlineBookmark, HiBookmark, HiOutlineBell, HiOutlineStar, HiStar, HiOutlinePhotograph, HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineX, HiOutlineInformationCircle, HiOutlineRefresh, HiOutlineDuplicate, HiOutlineCheck } from 'react-icons/hi';
+
+const EventMap = lazy(() => import('../components/EventMap'));
 import { FaTwitter, FaFacebook, FaLinkedin, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
 
 export default function EventDetail() {
@@ -542,6 +544,16 @@ export default function EventDetail() {
               <div>
                 <p className="text-xs text-[rgb(var(--text-tertiary))] uppercase tracking-wide">Location</p>
                 <p className="text-sm font-medium text-[rgb(var(--text-primary))] mt-1">{event.location}</p>
+                {event.latitude && event.longitude && (
+                  <Suspense fallback={<div className="h-[200px] shimmer rounded-lg mt-2" />}>
+                    <EventMap
+                      events={[event]}
+                      center={[event.latitude, event.longitude]}
+                      zoom={14}
+                      className="h-[200px] mt-2"
+                    />
+                  </Suspense>
+                )}
               </div>
             </div>
 

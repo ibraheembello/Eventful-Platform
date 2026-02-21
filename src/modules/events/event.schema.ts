@@ -23,6 +23,8 @@ export const createEventSchema = z.object({
   defaultReminderUnit: z.enum(['MINUTES', 'HOURS', 'DAYS', 'WEEKS']).optional(),
   recurrence: recurrenceSchema.optional(),
   status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
 });
 
 export const updateEventSchema = z.object({
@@ -37,6 +39,8 @@ export const updateEventSchema = z.object({
   defaultReminderValue: z.number().int().min(1).optional().nullable(),
   defaultReminderUnit: z.enum(['MINUTES', 'HOURS', 'DAYS', 'WEEKS']).optional().nullable(),
   status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
 });
 
 export const createCommentSchema = z.object({

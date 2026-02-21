@@ -89,6 +89,24 @@ export class EventController {
     }
   }
 
+  static async getNearby(req: Request, res: Response, next: NextFunction) {
+    try {
+      const lat = parseFloat(req.query.lat as string);
+      const lng = parseFloat(req.query.lng as string);
+      if (isNaN(lat) || isNaN(lng)) {
+        return res.status(400).json({ success: false, message: 'lat and lng query parameters are required' });
+      }
+      const radius = parseFloat(req.query.radius as string) || 50;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+
+      const result = await EventService.getNearby(lat, lng, radius, page, limit);
+      ApiResponse.paginated(res, (result as any).events, (result as any).total, page, limit);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const event = await EventService.getById(param(req, 'id'), req.user?.userId);

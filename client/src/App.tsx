@@ -28,6 +28,10 @@ import ResetPassword from './pages/ResetPassword';
 import Categories from './pages/Categories';
 import SeriesDetail from './pages/SeriesDetail';
 import NotificationsInbox from './pages/NotificationsInbox';
+import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminUsers from './pages/AdminUsers';
+import AdminEvents from './pages/AdminEvents';
 
 function HomeRoute() {
   return <LandingPage />;
@@ -54,6 +58,10 @@ function App() {
             <Route path="/events/series/:seriesId" element={<ErrorBoundary><SeriesDetail /></ErrorBoundary>} />
             <Route path="/events/:id" element={<ErrorBoundary><EventDetail /></ErrorBoundary>} />
 
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><AdminUsers /></ProtectedRoute>} />
+            <Route path="/admin/events" element={<ProtectedRoute roles={['ADMIN']}><AdminEvents /></ProtectedRoute>} />
             <Route path="/tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Reminders /></ProtectedRoute>} />
             <Route path="/notifications/inbox" element={<ProtectedRoute><NotificationsInbox /></ProtectedRoute>} />

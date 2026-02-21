@@ -62,6 +62,10 @@ export class AuthService {
       throw ApiError.unauthorized('Invalid email or password');
     }
 
+    if (user.suspended) {
+      throw ApiError.forbidden('Your account has been suspended. Please contact support.');
+    }
+
     if (!user.password) {
       const providerName = user.provider === 'google' ? 'Google' : user.provider === 'github' ? 'GitHub' : 'social';
       throw ApiError.unauthorized(`This account uses ${providerName} sign-in. Please use the ${providerName} button to log in.`);
@@ -212,6 +216,9 @@ export class AuthService {
     });
 
     if (user) {
+      if (user.suspended) {
+        throw ApiError.forbidden('Your account has been suspended. Please contact support.');
+      }
       // Link Google account if found by email but not yet linked
       if (!user.googleId) {
         user = await prisma.user.update({
@@ -315,6 +322,9 @@ export class AuthService {
     });
 
     if (user) {
+      if (user.suspended) {
+        throw ApiError.forbidden('Your account has been suspended. Please contact support.');
+      }
       // Link GitHub account if found by email but not yet linked
       if (!user.githubId) {
         user = await prisma.user.update({

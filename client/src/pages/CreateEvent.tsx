@@ -24,6 +24,8 @@ export default function CreateEvent() {
     category: '',
     defaultReminderValue: '',
     defaultReminderUnit: 'HOURS',
+    latitude: '',
+    longitude: '',
   });
 
   // Recurring event state
@@ -97,6 +99,8 @@ export default function CreateEvent() {
           category: e.category || '',
           defaultReminderValue: e.defaultReminderValue?.toString() || '',
           defaultReminderUnit: e.defaultReminderUnit || 'HOURS',
+          latitude: e.latitude?.toString() || '',
+          longitude: e.longitude?.toString() || '',
         });
         if (existingUrl) {
           setImagePreview(existingUrl);
@@ -305,6 +309,8 @@ export default function CreateEvent() {
         payload.defaultReminderValue = Number(form.defaultReminderValue);
         payload.defaultReminderUnit = form.defaultReminderUnit;
       }
+      if (form.latitude) payload.latitude = parseFloat(form.latitude);
+      if (form.longitude) payload.longitude = parseFloat(form.longitude);
       if (asDraft) payload.status = 'DRAFT';
 
       // Add recurrence data if creating a recurring event
@@ -543,6 +549,37 @@ export default function CreateEvent() {
               />
             </div>
           </div>
+
+          {/* Coordinates (optional) */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">Latitude (optional)</label>
+              <input
+                type="number"
+                step="any"
+                min={-90}
+                max={90}
+                value={form.latitude}
+                onChange={(e) => setForm({ ...form, latitude: e.target.value })}
+                className="w-full px-4 py-2.5 border border-[rgb(var(--border-primary))] rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))]"
+                placeholder="e.g. 6.5244"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-1">Longitude (optional)</label>
+              <input
+                type="number"
+                step="any"
+                min={-180}
+                max={180}
+                value={form.longitude}
+                onChange={(e) => setForm({ ...form, longitude: e.target.value })}
+                className="w-full px-4 py-2.5 border border-[rgb(var(--border-primary))] rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))]"
+                placeholder="e.g. 3.3792"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-[rgb(var(--text-tertiary))] -mt-3">Leave blank to auto-detect from location address</p>
 
           <div className="grid grid-cols-2 gap-4">
             <div>

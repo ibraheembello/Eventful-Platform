@@ -3,7 +3,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'CREATOR' | 'EVENTEE';
+  role: 'CREATOR' | 'EVENTEE' | 'ADMIN';
   profileImage?: string;
   provider?: string;
   createdAt: string;
@@ -75,6 +75,8 @@ export interface Event {
   seriesOccurrence?: number;
   ticketTypes?: TicketType[];
   collaborators?: EventCollaborator[];
+  latitude?: number;
+  longitude?: number;
   createdAt: string;
   updatedAt?: string;
 }
