@@ -2,10 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useGoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 import { HiOutlineMoon, HiOutlineSun, HiOutlineEye, HiOutlineEyeOff, HiX } from 'react-icons/hi';
-import { FcGoogle } from 'react-icons/fc';
 import { FaGithub } from 'react-icons/fa';
 
 const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || '';
@@ -17,7 +16,7 @@ export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [pendingCredential, setPendingCredential] = useState<{ provider: 'google' | 'github'; credential: string } | null>(null);
+  const [pendingCredential, setPendingCredential] = useState<string | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,20 +33,25 @@ export default function Login() {
     }
   };
 
-  const handleSocialLoginWithRoleFallback = async (provider: 'google' | 'github', credential: string) => {
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+    const credential = credentialResponse.credential;
+    if (!credential) {
+      toast.error('Google sign-in failed — no credential received');
+      return;
+    }
     setLoading(true);
     try {
-      await socialLogin(provider, { credential });
+      await socialLogin('google', { credential });
       toast.success('Welcome back!');
       navigate('/events');
     } catch (err: any) {
       const msg: string = err.response?.data?.message || '';
       if (msg.toLowerCase().includes('role is required') || msg.toLowerCase().includes('sign up first')) {
         // New user — show role selection modal
-        setPendingCredential({ provider, credential });
+        setPendingCredential(credential);
         setShowRoleModal(true);
       } else {
-        toast.error(msg || `${provider === 'google' ? 'Google' : 'GitHub'} sign-in failed`);
+        toast.error(msg || 'Google sign-in failed');
       }
     } finally {
       setLoading(false);
@@ -59,7 +63,7 @@ export default function Login() {
     setShowRoleModal(false);
     setLoading(true);
     try {
-      await socialLogin(pendingCredential.provider, { credential: pendingCredential.credential, role });
+      await socialLogin('google', { credential: pendingCredential, role });
       toast.success('Account created successfully!');
       navigate('/events');
     } catch (err: any) {
@@ -69,14 +73,6 @@ export default function Login() {
       setPendingCredential(null);
     }
   };
-
-  const googleLogin = useGoogleLogin({
-    flow: 'implicit',
-    onSuccess: async (tokenResponse) => {
-      await handleSocialLoginWithRoleFallback('google', tokenResponse.access_token);
-    },
-    onError: () => toast.error('Google sign-in failed'),
-  });
 
   const handleGitHubLogin = () => {
     sessionStorage.removeItem('github_oauth_role');
@@ -160,15 +156,17 @@ export default function Login() {
 
           {/* Social Buttons */}
           <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => googleLogin()}
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[rgb(var(--border-primary))] rounded-lg font-medium hover:bg-[rgb(var(--bg-secondary))] disabled:opacity-50 transition text-[rgb(var(--text-primary))]"
-            >
-              <FcGoogle className="w-5 h-5" />
-              Sign in with Google
-            </button>
+            <div className="flex justify-center [&>div]:!w-full">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => toast.error('Google sign-in failed')}
+                theme={theme === 'dark' ? 'filled_black' : 'outline'}
+                size="large"
+                shape="rectangular"
+                text="signin_with"
+                width="400"
+              />
+            </div>
             {GITHUB_CLIENT_ID && (
               <button
                 type="button"
