@@ -3,8 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
-import type { EventImage } from '../types';
-import { HiOutlinePhotograph, HiOutlineUpload, HiOutlineLink, HiX, HiOutlineTrash, HiOutlinePlus, HiOutlineRefresh } from 'react-icons/hi';
+import type { EventImage, EventCollaborator } from '../types';
+import { HiOutlinePhotograph, HiOutlineUpload, HiOutlineLink, HiX, HiOutlineTrash, HiOutlinePlus, HiOutlineRefresh, HiOutlineUserGroup } from 'react-icons/hi';
 
 const CATEGORIES = ['Music', 'Technology', 'Art', 'Entertainment', 'Sports', 'Education', 'Business', 'Food & Drink', 'Health', 'Other'];
 
@@ -53,6 +53,18 @@ export default function CreateEvent() {
   const [editingCaptionId, setEditingCaptionId] = useState<string | null>(null);
   const [editingCaptionText, setEditingCaptionText] = useState('');
 
+  // Ticket types (create mode)
+  const [useTicketTypes, setUseTicketTypes] = useState(false);
+  const [ticketTypes, setTicketTypes] = useState<{ name: string; price: number; capacity: number; description: string }[]>([
+    { name: 'Regular', price: 0, capacity: 100, description: '' },
+  ]);
+
+  // Collaborators (edit mode)
+  const [collaborators, setCollaborators] = useState<EventCollaborator[]>([]);
+  const [collabEmail, setCollabEmail] = useState('');
+  const [invitingCollab, setInvitingCollab] = useState(false);
+  const [eventCreatorId, setEventCreatorId] = useState<string | null>(null);
+
   // Preview dates for recurring events
   const previewDates = useMemo(() => {
     if (!isRecurring || !form.date) return [];
@@ -91,6 +103,12 @@ export default function CreateEvent() {
           setImageMode(existingUrl.startsWith('/uploads/') ? 'upload' : 'url');
         }
         if (e.images?.length) setGalleryImages(e.images);
+        if (e.collaborators?.length) setCollaborators(e.collaborators);
+        if (e.ticketTypes?.length) {
+          setUseTicketTypes(true);
+          setTicketTypes(e.ticketTypes.map((t: any) => ({ name: t.name, price: t.price, capacity: t.capacity, description: t.description || '' })));
+        }
+        setEventCreatorId(e.creatorId || null);
       });
     }
   }, [id, isEdit]);
@@ -237,7 +255,32 @@ export default function CreateEvent() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleInviteCollaborator = async () => {
+    if (!collabEmail.trim() || !id) return;
+    setInvitingCollab(true);
+    try {
+      const res = await api.post(`/events/${id}/collaborators`, { email: collabEmail.trim() });
+      setCollaborators((prev) => [...prev, res.data.data]);
+      setCollabEmail('');
+      toast.success('Collaborator invited');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to invite');
+    } finally {
+      setInvitingCollab(false);
+    }
+  };
+
+  const handleRemoveCollaborator = async (collabId: string) => {
+    try {
+      await api.delete(`/events/${id}/collaborators/${collabId}`);
+      setCollaborators((prev) => prev.filter((c) => c.id !== collabId));
+      toast.success('Collaborator removed');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to remove');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent, asDraft = false) => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -262,6 +305,7 @@ export default function CreateEvent() {
         payload.defaultReminderValue = Number(form.defaultReminderValue);
         payload.defaultReminderUnit = form.defaultReminderUnit;
       }
+      if (asDraft) payload.status = 'DRAFT';
 
       // Add recurrence data if creating a recurring event
       if (!isEdit && isRecurring) {
@@ -273,6 +317,10 @@ export default function CreateEvent() {
 
       if (isEdit) {
         const res = await api.put(`/events/${id}`, payload);
+        // Save ticket types if changed
+        if (useTicketTypes && ticketTypes.length > 0) {
+          await api.post(`/events/${id}/ticket-types`, { types: ticketTypes }).catch(() => {});
+        }
         const notifiedCount = res.data.data?.notifiedCount || 0;
         if (notifiedCount > 0) {
           toast.success(`Event updated! ${notifiedCount} ticket holder(s) will be notified.`);
@@ -286,8 +334,13 @@ export default function CreateEvent() {
           navigate(`/events/series/${res.data.data.series.id}`);
           return;
         }
-        toast.success('Event created!');
-        navigate(`/events/${res.data.data.id}`);
+        // Save ticket types for new event
+        const newEventId = res.data.data.id;
+        if (useTicketTypes && ticketTypes.length > 0) {
+          await api.post(`/events/${newEventId}/ticket-types`, { types: ticketTypes }).catch(() => {});
+        }
+        toast.success(asDraft ? 'Event saved as draft!' : 'Event created!');
+        navigate(`/events/${newEventId}`);
         return;
       }
       navigate(`/events/${id}`);
@@ -543,6 +596,70 @@ export default function CreateEvent() {
             </div>
           </div>
 
+          {/* Ticket Types Toggle */}
+          <div className="border-t border-[rgb(var(--border-primary))] pt-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-[rgb(var(--text-secondary))]">Use Ticket Types</p>
+              <button
+                type="button"
+                onClick={() => setUseTicketTypes(!useTicketTypes)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  useTicketTypes ? 'bg-emerald-600' : 'bg-[rgb(var(--bg-tertiary))]'
+                }`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${useTicketTypes ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            {useTicketTypes && (
+              <div className="space-y-3">
+                <p className="text-xs text-[rgb(var(--text-tertiary))]">Define ticket tiers (e.g., VIP, Regular, Early Bird). This replaces the single price/capacity fields above.</p>
+                {ticketTypes.map((tt, i) => (
+                  <div key={i} className="p-3 rounded-lg border border-[rgb(var(--border-primary))] bg-[rgb(var(--bg-secondary))] space-y-2">
+                    <div className="flex items-center justify-between">
+                      <input
+                        type="text"
+                        value={tt.name}
+                        onChange={(e) => { const n = [...ticketTypes]; n[i].name = e.target.value; setTicketTypes(n); }}
+                        placeholder="Type name (e.g., VIP)"
+                        className="text-sm font-medium bg-transparent border-none outline-none text-[rgb(var(--text-primary))] placeholder-[rgb(var(--text-tertiary))] flex-1"
+                      />
+                      {ticketTypes.length > 1 && (
+                        <button type="button" onClick={() => setTicketTypes(ticketTypes.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-500 p-1">
+                          <HiOutlineTrash className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-[10px] text-[rgb(var(--text-tertiary))]">Price (NGN)</label>
+                        <input type="number" min={0} value={tt.price} onChange={(e) => { const n = [...ticketTypes]; n[i].price = Number(e.target.value); setTicketTypes(n); }}
+                          className="w-full px-2 py-1.5 text-sm border border-[rgb(var(--border-primary))] rounded bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))]" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[rgb(var(--text-tertiary))]">Capacity</label>
+                        <input type="number" min={1} value={tt.capacity} onChange={(e) => { const n = [...ticketTypes]; n[i].capacity = Number(e.target.value); setTicketTypes(n); }}
+                          className="w-full px-2 py-1.5 text-sm border border-[rgb(var(--border-primary))] rounded bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))]" />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-[rgb(var(--text-tertiary))]">Description</label>
+                        <input type="text" value={tt.description} onChange={(e) => { const n = [...ticketTypes]; n[i].description = e.target.value; setTicketTypes(n); }}
+                          placeholder="Optional"
+                          className="w-full px-2 py-1.5 text-sm border border-[rgb(var(--border-primary))] rounded bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] placeholder-[rgb(var(--text-tertiary))]" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setTicketTypes([...ticketTypes, { name: '', price: 0, capacity: 50, description: '' }])}
+                  className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-medium"
+                >
+                  <HiOutlinePlus className="w-4 h-4" /> Add Ticket Type
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Recurring Event Toggle - Create mode only */}
           {!isEdit && (
             <div className="border-t border-[rgb(var(--border-primary))] pt-5">
@@ -726,8 +843,79 @@ export default function CreateEvent() {
             </div>
           )}
 
+          {/* Collaborators - Edit mode only, creator only */}
+          {isEdit && eventCreatorId && (
+            <div className="border-t border-[rgb(var(--border-primary))] pt-5">
+              <div className="flex items-center gap-2 mb-3">
+                <HiOutlineUserGroup className="w-4 h-4 text-indigo-500" />
+                <p className="text-sm font-medium text-[rgb(var(--text-secondary))]">Co-Hosts ({collaborators.length})</p>
+              </div>
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="email"
+                  value={collabEmail}
+                  onChange={(e) => setCollabEmail(e.target.value)}
+                  placeholder="Invite by email (CREATOR role)"
+                  className="flex-1 px-4 py-2 text-sm border border-[rgb(var(--border-primary))] rounded-lg bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] placeholder-[rgb(var(--text-tertiary))]"
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleInviteCollaborator())}
+                />
+                <button
+                  type="button"
+                  onClick={handleInviteCollaborator}
+                  disabled={invitingCollab || !collabEmail.trim()}
+                  className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                >
+                  {invitingCollab ? 'Inviting...' : 'Invite'}
+                </button>
+              </div>
+              {collaborators.length > 0 && (
+                <div className="space-y-2">
+                  {collaborators.map((c) => (
+                    <div key={c.id} className="flex items-center justify-between px-3 py-2 rounded-lg bg-[rgb(var(--bg-secondary))] border border-[rgb(var(--border-primary))]">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
+                          {c.user.firstName[0]}{c.user.lastName[0]}
+                        </div>
+                        <div>
+                          <p className="text-sm text-[rgb(var(--text-primary))]">{c.user.firstName} {c.user.lastName}</p>
+                          <p className="text-xs text-[rgb(var(--text-tertiary))]">{c.user.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                          c.accepted
+                            ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                        }`}>
+                          {c.accepted ? 'Accepted' : 'Pending'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCollaborator(c.id)}
+                          className="text-red-400 hover:text-red-500 p-1"
+                        >
+                          <HiOutlineTrash className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={() => navigate(-1)} className="flex-1 py-2.5 border border-[rgb(var(--border-primary))] rounded-lg text-[rgb(var(--text-primary))] font-medium hover:bg-[rgb(var(--bg-secondary))] transition">Cancel</button>
+            {!isEdit && (
+              <button
+                type="button"
+                onClick={(e) => handleSubmit(e as any, true)}
+                disabled={loading || uploading}
+                className="py-2.5 px-4 border-2 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 rounded-lg font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20 disabled:opacity-50 transition text-sm"
+              >
+                Save as Draft
+              </button>
+            )}
             <button type="submit" disabled={loading || uploading} className="flex-1 py-2.5 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-50 transition">
               {uploading ? 'Uploading image...' : loading ? 'Saving...' : isEdit ? 'Update Event' : 'Create Event'}
             </button>

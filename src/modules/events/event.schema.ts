@@ -22,6 +22,7 @@ export const createEventSchema = z.object({
   defaultReminderValue: z.number().int().min(1).optional(),
   defaultReminderUnit: z.enum(['MINUTES', 'HOURS', 'DAYS', 'WEEKS']).optional(),
   recurrence: recurrenceSchema.optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
 });
 
 export const updateEventSchema = z.object({
@@ -35,6 +36,7 @@ export const updateEventSchema = z.object({
   category: z.string().optional().nullable(),
   defaultReminderValue: z.number().int().min(1).optional().nullable(),
   defaultReminderUnit: z.enum(['MINUTES', 'HOURS', 'DAYS', 'WEEKS']).optional().nullable(),
+  status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
 });
 
 export const createCommentSchema = z.object({
@@ -55,6 +57,27 @@ export const updateImageSchema = z.object({
   caption: z.string().max(200).optional().nullable(),
 });
 
+export const ticketTypeSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  price: z.number().min(0, 'Price must be 0 or greater'),
+  capacity: z.number().int().min(1, 'Capacity must be at least 1'),
+  description: z.string().optional(),
+  sortOrder: z.number().int().optional(),
+});
+
+export const createTicketTypesSchema = z.object({
+  types: z.array(ticketTypeSchema).min(1, 'At least one ticket type is required'),
+});
+
+export const updateTicketTypeSchema = z.object({
+  name: z.string().min(1).optional(),
+  price: z.number().min(0).optional(),
+  capacity: z.number().int().min(1).optional(),
+  description: z.string().optional().nullable(),
+  sortOrder: z.number().int().optional(),
+});
+
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 export type UpdateEventInput = z.infer<typeof updateEventSchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
+export type TicketTypeInput = z.infer<typeof ticketTypeSchema>;

@@ -42,6 +42,21 @@ enum RecurrencePattern {
   MONTHLY
 }
 
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum CollaboratorRole {
+  CO_HOST
+}
+
+enum TransferStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id            String         @id @default(uuid())
   email         String         @unique
@@ -67,6 +82,10 @@ model User {
   waitlists     Waitlist[]
   promoCodes    PromoCode[]  @relation("CreatorPromoCodes")
   eventSeries   EventSeries[] @relation("CreatorSeries")
+  inAppNotifications InAppNotification[]
+  collaborations     EventCollaborator[]
+  transfersSent      TicketTransfer[] @relation("TransfersSent")
+  transfersReceived  TicketTransfer[] @relation("TransfersReceived")
 
   @@map("users")
 }
@@ -81,6 +100,7 @@ model Event {
   capacity            Int
   imageUrl            String?
   category            String?
+  status              EventStatus    @default(PUBLISHED)
   defaultReminderValue Int?
   defaultReminderUnit  ReminderUnit?
   createdAt           DateTime       @default(now())
@@ -101,6 +121,8 @@ model Event {
   waitlists           Waitlist[]
   images              EventImage[]
   promoCodes          PromoCode[]
+  collaborators       EventCollaborator[]
+  ticketTypes         TicketType[]
 
   @@map("events")
 }
@@ -122,6 +144,11 @@ model Ticket {
 
   paymentId   String       @unique
   payment     Payment      @relation(fields: [paymentId], references: [id])
+
+  ticketTypeId String?
+  ticketType   TicketType?  @relation(fields: [ticketTypeId], references: [id])
+
+  transfers   TicketTransfer[]
 
   @@map("tickets")
 }
@@ -146,6 +173,9 @@ model Payment {
 
   promoCodeId       String?
   promoCode         PromoCode?    @relation(fields: [promoCodeId], references: [id])
+
+  ticketTypeId      String?
+  ticketType        TicketType?   @relation(fields: [ticketTypeId], references: [id])
 
   ticket            Ticket?
 
@@ -267,4 +297,70 @@ model EventSeries {
   createdAt          DateTime          @default(now())
 
   @@map("event_series")
+}
+
+model InAppNotification {
+  id        String   @id @default(uuid())
+  message   String
+  link      String?
+  type      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("in_app_notifications")
+}
+
+model EventCollaborator {
+  id        String           @id @default(uuid())
+  role      CollaboratorRole @default(CO_HOST)
+  accepted  Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  eventId   String
+  event     Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@map("event_collaborators")
+}
+
+model TicketTransfer {
+  id        String         @id @default(uuid())
+  status    TransferStatus @default(COMPLETED)
+  createdAt DateTime       @default(now())
+
+  ticketId  String
+  ticket    Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  fromUserId String
+  fromUser   User          @relation("TransfersSent", fields: [fromUserId], references: [id], onDelete: Cascade)
+
+  toUserId   String
+  toUser     User          @relation("TransfersReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@map("ticket_transfers")
+}
+
+model TicketType {
+  id          String   @id @default(uuid())
+  name        String
+  price       Float
+  capacity    Int
+  description String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  eventId     String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  tickets     Ticket[]
+  payments    Payment[]
+
+  @@map("ticket_types")
 }

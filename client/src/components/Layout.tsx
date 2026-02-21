@@ -2,7 +2,8 @@ import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { HiOutlineTicket, HiOutlineBell, HiOutlineChartBar, HiOutlineCalendar, HiOutlineLogout, HiOutlineMenu, HiOutlineX, HiOutlineQrcode, HiOutlineMoon, HiOutlineSun, HiOutlineUserCircle, HiOutlineHome, HiOutlineBookmark, HiOutlineTag, HiOutlineClock, HiOutlineViewGrid, HiOutlineChevronDown } from 'react-icons/hi';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import api from '../lib/api';
 
 function NavDropdown({ label, icon, children }: { label: string; icon: React.ReactNode; children: (close: () => void) => React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -53,6 +54,21 @@ export default function Layout() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const fetchUnreadCount = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await api.get('/notifications/in-app/unread');
+      setUnreadCount(res.data.data?.count || 0);
+    } catch {}
+  }, [user]);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, [fetchUnreadCount]);
 
   const handleLogout = () => {
     logout();
@@ -114,6 +130,18 @@ export default function Layout() {
               </button>
               {user ? (
                 <>
+                  <Link
+                    to="/notifications/inbox"
+                    className="relative p-2 text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg hover:bg-[rgb(var(--bg-secondary))] transition-colors"
+                    aria-label="Notifications"
+                  >
+                    <HiOutlineBell className="w-5 h-5" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </Link>
                   <Link to="/profile" className="flex items-center gap-2 text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
                     {user.profileImage ? (
                       <img src={user.profileImage} alt="" className="w-7 h-7 rounded-full object-cover" />
@@ -159,6 +187,9 @@ export default function Layout() {
             {user ? (
               <>
                 <Link to="/tickets" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">My Tickets</Link>
+                <Link to="/notifications/inbox" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">
+                  Notifications {unreadCount > 0 && <span className="px-1.5 py-0.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{unreadCount}</span>}
+                </Link>
                 <Link to="/notifications" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Reminders</Link>
                 <Link to="/saved" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Saved Events</Link>
                 <Link to="/waitlists" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Waitlists</Link>

@@ -91,8 +91,26 @@ export class EventController {
 
   static async getById(req: Request, res: Response, next: NextFunction) {
     try {
-      const event = await EventService.getById(param(req, 'id'));
+      const event = await EventService.getById(param(req, 'id'), req.user?.userId);
       ApiResponse.success(res, event);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async togglePublish(req: Request, res: Response, next: NextFunction) {
+    try {
+      const event = await EventService.togglePublish(param(req, 'id'), req.user!.userId);
+      ApiResponse.success(res, event, `Event ${event.status === 'PUBLISHED' ? 'published' : 'unpublished'} successfully`);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async duplicate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const clone = await EventService.duplicate(param(req, 'id'), req.user!.userId);
+      ApiResponse.created(res, clone, 'Event duplicated as draft');
     } catch (error) {
       next(error);
     }
@@ -362,6 +380,87 @@ export class EventController {
         req.body.caption,
       );
       ApiResponse.success(res, image, 'Image updated');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async setTicketTypes(req: Request, res: Response, next: NextFunction) {
+    try {
+      const types = await EventService.setTicketTypes(param(req, 'id'), req.user!.userId, req.body.types);
+      ApiResponse.created(res, types, 'Ticket types set');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getTicketTypes(req: Request, res: Response, next: NextFunction) {
+    try {
+      const types = await EventService.getTicketTypes(param(req, 'id'));
+      ApiResponse.success(res, types);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async updateTicketType(req: Request, res: Response, next: NextFunction) {
+    try {
+      const type = await EventService.updateTicketType(
+        param(req, 'typeId'),
+        param(req, 'id'),
+        req.user!.userId,
+        req.body,
+      );
+      ApiResponse.success(res, type, 'Ticket type updated');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteTicketType(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await EventService.deleteTicketType(
+        param(req, 'typeId'),
+        param(req, 'id'),
+        req.user!.userId,
+      );
+      ApiResponse.success(res, result, 'Ticket type deleted');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async inviteCollaborator(req: Request, res: Response, next: NextFunction) {
+    try {
+      const collab = await EventService.inviteCollaborator(param(req, 'id'), req.user!.userId, req.body.email);
+      ApiResponse.created(res, collab, 'Collaborator invited');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async acceptCollaboration(req: Request, res: Response, next: NextFunction) {
+    try {
+      const collab = await EventService.acceptCollaboration(param(req, 'id'), req.user!.userId);
+      ApiResponse.success(res, collab, 'Collaboration accepted');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async removeCollaborator(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await EventService.removeCollaborator(param(req, 'id'), req.user!.userId, param(req, 'collabId'));
+      ApiResponse.success(res, result, 'Collaborator removed');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getCollaborators(req: Request, res: Response, next: NextFunction) {
+    try {
+      const collabs = await EventService.getCollaborators(param(req, 'id'));
+      ApiResponse.success(res, collabs);
     } catch (error) {
       next(error);
     }

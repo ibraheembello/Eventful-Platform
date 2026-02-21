@@ -5,7 +5,7 @@ import type { Event, ShareLinks, Comment } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
-import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineShare, HiOutlinePencil, HiOutlineTrash, HiOutlineClock, HiOutlineTag, HiOutlineBookmark, HiBookmark, HiOutlineBell, HiOutlineStar, HiStar, HiOutlinePhotograph, HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineX, HiOutlineInformationCircle, HiOutlineRefresh } from 'react-icons/hi';
+import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers, HiOutlineShare, HiOutlinePencil, HiOutlineTrash, HiOutlineClock, HiOutlineTag, HiOutlineBookmark, HiBookmark, HiOutlineBell, HiOutlineStar, HiStar, HiOutlinePhotograph, HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineX, HiOutlineInformationCircle, HiOutlineRefresh, HiOutlineDuplicate, HiOutlineCheck } from 'react-icons/hi';
 import { FaTwitter, FaFacebook, FaLinkedin, FaWhatsapp, FaEnvelope } from 'react-icons/fa';
 
 export default function EventDetail() {
@@ -42,6 +42,9 @@ export default function EventDetail() {
     originalPrice: number;
     finalPrice: number;
   } | null>(null);
+  const [selectedTicketType, setSelectedTicketType] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   useEffect(() => {
     api.get(`/events/${id}`)
@@ -93,10 +96,15 @@ export default function EventDetail() {
 
   const handleBuyTicket = async () => {
     if (!user) { navigate('/login'); return; }
+    if (event?.ticketTypes?.length && !selectedTicketType) {
+      toast.error('Please select a ticket type');
+      return;
+    }
     setPaying(true);
     try {
       const body: any = { eventId: id };
       if (promoDiscount && promoCode) body.promoCode = promoCode;
+      if (selectedTicketType) body.ticketTypeId = selectedTicketType;
       const res = await api.post('/payments/initialize', body);
       if (res.data.data.free) {
         toast.success('Ticket claimed successfully!');
@@ -214,6 +222,47 @@ export default function EventDetail() {
     }
   };
 
+  const handleTogglePublish = async () => {
+    setPublishing(true);
+    try {
+      const res = await api.put(`/events/${id}/publish`);
+      setEvent(res.data.data);
+      toast.success(res.data.message);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to update status');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    setDuplicating(true);
+    try {
+      const res = await api.post(`/events/${id}/duplicate`);
+      toast.success('Event duplicated as draft');
+      navigate(`/events/${res.data.data.id}/edit`);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to duplicate');
+    } finally {
+      setDuplicating(false);
+    }
+  };
+
+  const handleAcceptCollab = async () => {
+    try {
+      await api.put(`/events/${id}/collaborators/accept`);
+      setEvent((prev) => prev ? {
+        ...prev,
+        collaborators: prev.collaborators?.map((c) =>
+          c.userId === user?.id ? { ...c, accepted: true } : c
+        ),
+      } : prev);
+      toast.success('Collaboration accepted!');
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to accept');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-20">
@@ -231,8 +280,20 @@ export default function EventDetail() {
   }
 
   const isCreator = user?.id === event.creatorId;
-  const soldOut = (event._count?.tickets || 0) >= event.capacity;
-  const availableTickets = event.capacity - (event._count?.tickets || 0);
+  const pendingCollab = event.collaborators?.find((c) => c.userId === user?.id && !c.accepted);
+  const acceptedCollab = event.collaborators?.find((c) => c.userId === user?.id && c.accepted);
+  const canManage = isCreator || !!acceptedCollab;
+  const isDraft = event.status === 'DRAFT';
+
+  // For ticket type events, check per-type availability
+  const hasTicketTypes = (event.ticketTypes?.length || 0) > 0;
+  const selectedType = hasTicketTypes ? event.ticketTypes?.find((t) => t.id === selectedTicketType) : null;
+  const soldOut = hasTicketTypes
+    ? event.ticketTypes!.every((t) => (t._count?.tickets || 0) >= t.capacity)
+    : (event._count?.tickets || 0) >= event.capacity;
+  const availableTickets = hasTicketTypes
+    ? (selectedType ? selectedType.capacity - (selectedType._count?.tickets || 0) : 0)
+    : event.capacity - (event._count?.tickets || 0);
   const isPast = new Date(event.date) < new Date();
   const canReview = isPast && hasTicket && !isCreator && !comments.some((c) => c.userId === user?.id);
 
@@ -318,7 +379,7 @@ export default function EventDetail() {
               >
                 <HiOutlineShare className="w-5 h-5 text-white" />
               </button>
-              {isCreator && (
+              {canManage && (
                 <>
                   <Link
                     to={`/events/${id}/attendees`}
@@ -337,12 +398,23 @@ export default function EventDetail() {
                   </button>
                   <button
                     type="button"
-                    onClick={handleDelete}
-                    aria-label="Delete event"
-                    className="glass-light p-2.5 rounded-lg hover:bg-red-500/80 transition-all duration-200"
+                    onClick={handleDuplicate}
+                    disabled={duplicating}
+                    aria-label="Duplicate event"
+                    className="glass-light p-2.5 rounded-lg hover:bg-white/30 transition-all duration-200"
                   >
-                    <HiOutlineTrash className="w-5 h-5 text-white" />
+                    <HiOutlineDuplicate className="w-5 h-5 text-white" />
                   </button>
+                  {isCreator && (
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      aria-label="Delete event"
+                      className="glass-light p-2.5 rounded-lg hover:bg-red-500/80 transition-all duration-200"
+                    >
+                      <HiOutlineTrash className="w-5 h-5 text-white" />
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -519,6 +591,40 @@ export default function EventDetail() {
             )}
           </div>
 
+          {/* Draft Banner */}
+          {isDraft && canManage && (
+            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/40">
+              <div className="flex items-center gap-2">
+                <HiOutlineInformationCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 font-medium">This event is a draft and not visible to the public.</p>
+              </div>
+              {isCreator && (
+                <button
+                  type="button"
+                  onClick={handleTogglePublish}
+                  disabled={publishing}
+                  className="px-4 py-1.5 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-1.5 flex-shrink-0"
+                >
+                  <HiOutlineCheck className="w-4 h-4" /> {publishing ? 'Publishing...' : 'Publish'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Pending Co-Host Invite Banner */}
+          {pendingCollab && (
+            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/40">
+              <p className="text-sm text-indigo-700 dark:text-indigo-300 font-medium">You've been invited as a co-host for this event.</p>
+              <button
+                type="button"
+                onClick={handleAcceptCollab}
+                className="px-4 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1.5 flex-shrink-0"
+              >
+                <HiOutlineCheck className="w-4 h-4" /> Accept
+              </button>
+            </div>
+          )}
+
           {/* Updated Banner */}
           {event.updatedAt && event.createdAt && (() => {
             const updated = new Date(event.updatedAt).getTime();
@@ -586,38 +692,83 @@ export default function EventDetail() {
           </div>
 
           {/* Ticket Purchase Card - Eventees Only */}
-          {!isCreator && (
+          {!isCreator && !isDraft && (
             <div className="glass border border-[rgb(var(--border-primary))] rounded-xl p-6 lg:p-8 bg-gradient-to-br from-emerald-50/50 to-teal-50/50 dark:from-emerald-950/20 dark:to-teal-950/20">
+              {/* Ticket Type Selector */}
+              {hasTicketTypes && (
+                <div className="mb-6">
+                  <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wide mb-3">Select Ticket Type</p>
+                  <div className="grid gap-3">
+                    {event.ticketTypes!.map((tt) => {
+                      const sold = tt._count?.tickets || 0;
+                      const avail = tt.capacity - sold;
+                      const isSoldOut = avail <= 0;
+                      return (
+                        <button
+                          key={tt.id}
+                          type="button"
+                          disabled={isSoldOut}
+                          onClick={() => setSelectedTicketType(tt.id)}
+                          className={`text-left p-4 rounded-xl border-2 transition-all ${
+                            selectedTicketType === tt.id
+                              ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-900/20'
+                              : isSoldOut
+                                ? 'border-[rgb(var(--border-primary))] opacity-50 cursor-not-allowed'
+                                : 'border-[rgb(var(--border-primary))] hover:border-emerald-300 cursor-pointer'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-[rgb(var(--text-primary))]">{tt.name}</p>
+                              {tt.description && <p className="text-xs text-[rgb(var(--text-secondary))] mt-0.5">{tt.description}</p>}
+                              <p className="text-xs text-[rgb(var(--text-tertiary))] mt-1">
+                                {isSoldOut ? 'Sold out' : `${avail} left`}
+                              </p>
+                            </div>
+                            <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                              {tt.price > 0 ? `NGN ${tt.price.toLocaleString()}` : 'Free'}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wide mb-1">
-                    Ticket Price
-                  </p>
-                  {promoDiscount ? (
-                    <div>
-                      <p className="text-lg text-[rgb(var(--text-tertiary))] line-through">
-                        NGN {promoDiscount.originalPrice.toLocaleString()}
+                  {!hasTicketTypes && (
+                    <>
+                      <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium uppercase tracking-wide mb-1">
+                        Ticket Price
                       </p>
-                      <p className="text-3xl font-bold text-[rgb(var(--text-primary))]">
-                        {promoDiscount.finalPrice > 0 ? (
-                          <>
-                            <span className="text-lg">NGN</span> {promoDiscount.finalPrice.toLocaleString()}
-                          </>
-                        ) : (
-                          'Free'
-                        )}
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-3xl font-bold text-[rgb(var(--text-primary))]">
-                      {event.price > 0 ? (
-                        <>
-                          <span className="text-lg">NGN</span> {event.price.toLocaleString()}
-                        </>
+                      {promoDiscount ? (
+                        <div>
+                          <p className="text-lg text-[rgb(var(--text-tertiary))] line-through">
+                            NGN {promoDiscount.originalPrice.toLocaleString()}
+                          </p>
+                          <p className="text-3xl font-bold text-[rgb(var(--text-primary))]">
+                            {promoDiscount.finalPrice > 0 ? (
+                              <>
+                                <span className="text-lg">NGN</span> {promoDiscount.finalPrice.toLocaleString()}
+                              </>
+                            ) : (
+                              'Free'
+                            )}
+                          </p>
+                        </div>
                       ) : (
-                        'Free'
+                        <p className="text-3xl font-bold text-[rgb(var(--text-primary))]">
+                          {event.price > 0 ? (
+                            <>
+                              <span className="text-lg">NGN</span> {event.price.toLocaleString()}
+                            </>
+                          ) : (
+                            'Free'
+                          )}
+                        </p>
                       )}
-                    </p>
+                    </>
                   )}
                   {!soldOut && availableTickets > 0 && availableTickets <= 10 && (
                     <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">

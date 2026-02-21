@@ -2,8 +2,9 @@ import prisma from '../../config/database';
 import { ApiError } from '../../utils/apiError';
 import { Cache } from '../../utils/cache';
 import { EmailService } from '../../utils/emailService';
-import { CreateEventInput, UpdateEventInput, CreateCommentInput } from './event.schema';
+import { CreateEventInput, UpdateEventInput, CreateCommentInput, TicketTypeInput } from './event.schema';
 import { generateShareLinks, ShareLinks } from '../../utils/shareLink';
+import { InAppNotificationService } from '../inAppNotifications/in-app-notification.service';
 
 export class EventService {
   static async create(creatorId: string, input: CreateEventInput) {
@@ -175,7 +176,7 @@ export class EventService {
     const cached = await Cache.get(cacheKey);
     if (cached) return cached;
 
-    const where: any = {};
+    const where: any = { status: 'PUBLISHED' };
 
     if (search) {
       where.OR = [
@@ -262,10 +263,15 @@ export class EventService {
     return categories;
   }
 
-  static async getById(id: string) {
+  static async getById(id: string, userId?: string) {
     const cacheKey = `events:${id}`;
-    const cached = await Cache.get(cacheKey);
-    if (cached) return cached;
+    const cached = await Cache.get<any>(cacheKey);
+    if (cached) {
+      if (cached.status === 'DRAFT' && cached.creatorId !== userId) {
+        throw ApiError.forbidden('This event is not published');
+      }
+      return cached;
+    }
 
     const event = await prisma.event.findUnique({
       where: { id },
@@ -278,11 +284,27 @@ export class EventService {
         series: {
           select: { id: true, title: true, recurrencePattern: true, totalOccurrences: true },
         },
+        ticketTypes: {
+          orderBy: { sortOrder: 'asc' },
+          include: { _count: { select: { tickets: true } } },
+        },
+        collaborators: {
+          include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
+        },
       },
     });
 
     if (!event) {
       throw ApiError.notFound('Event not found');
+    }
+
+    if (event.status === 'DRAFT' && event.creatorId !== userId) {
+      const isCollaborator = event.collaborators.some(
+        (c) => c.userId === userId && c.accepted
+      );
+      if (!isCollaborator) {
+        throw ApiError.forbidden('This event is not published');
+      }
     }
 
     await Cache.set(cacheKey, event, 300);
@@ -330,7 +352,8 @@ export class EventService {
       throw ApiError.notFound('Event not found');
     }
 
-    if (event.creatorId !== creatorId) {
+    const canManage = await this.isCreatorOrCollaborator(eventId, creatorId);
+    if (!canManage) {
       throw ApiError.forbidden('You can only view attendees for your own events');
     }
 
@@ -396,7 +419,8 @@ export class EventService {
   static async manualCheckIn(ticketId: string, eventId: string, creatorId: string) {
     const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) throw ApiError.notFound('Event not found');
-    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only check in attendees for your own events');
+    const canManage = await this.isCreatorOrCollaborator(eventId, creatorId);
+    if (!canManage) throw ApiError.forbidden('You can only check in attendees for your own events');
 
     const ticket = await prisma.ticket.findFirst({
       where: { id: ticketId, eventId },
@@ -454,7 +478,8 @@ export class EventService {
       throw ApiError.notFound('Event not found');
     }
 
-    if (event.creatorId !== creatorId) {
+    const canManage = await this.isCreatorOrCollaborator(id, creatorId);
+    if (!canManage) {
       throw ApiError.forbidden('You can only update your own events');
     }
 
@@ -512,8 +537,16 @@ export class EventService {
   ) {
     const tickets = await prisma.ticket.findMany({
       where: { eventId, status: 'ACTIVE' },
-      select: { user: { select: { email: true, firstName: true } } },
+      select: { userId: true, user: { select: { email: true, firstName: true } } },
     });
+
+    const userIds = tickets.map((t) => t.userId);
+    InAppNotificationService.createBulk(
+      userIds,
+      `"${event.title}" has been updated: ${changes[0]}`,
+      'event_updated',
+      `/events/${event.id}`,
+    ).catch(() => {});
 
     for (const ticket of tickets) {
       EmailService.sendEventUpdate(
@@ -558,6 +591,88 @@ export class EventService {
     }
 
     return { message: 'Event deleted successfully', notifiedCount };
+  }
+
+  static async togglePublish(id: string, creatorId: string) {
+    const event = await prisma.event.findUnique({ where: { id } });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only publish your own events');
+
+    const newStatus = event.status === 'DRAFT' ? 'PUBLISHED' : 'DRAFT';
+
+    if (newStatus === 'DRAFT') {
+      const ticketCount = await prisma.ticket.count({ where: { eventId: id } });
+      if (ticketCount > 0) {
+        throw ApiError.badRequest('Cannot unpublish an event with tickets sold');
+      }
+    }
+
+    const updated = await prisma.event.update({
+      where: { id },
+      data: { status: newStatus },
+      include: {
+        creator: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+    });
+
+    await Cache.delPattern('events:*');
+    return updated;
+  }
+
+  static async duplicate(eventId: string, creatorId: string) {
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: { images: { orderBy: { order: 'asc' } } },
+    });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    const newDate = new Date(event.date);
+    newDate.setDate(newDate.getDate() + 7);
+
+    const clone = await prisma.event.create({
+      data: {
+        title: `${event.title} (Copy)`,
+        description: event.description,
+        date: newDate,
+        location: event.location,
+        price: event.price,
+        capacity: event.capacity,
+        imageUrl: event.imageUrl,
+        category: event.category,
+        defaultReminderValue: event.defaultReminderValue,
+        defaultReminderUnit: event.defaultReminderUnit,
+        status: 'DRAFT',
+        creatorId,
+      },
+      include: {
+        creator: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+    });
+
+    // Duplicate gallery images
+    if (event.images.length > 0) {
+      await prisma.eventImage.createMany({
+        data: event.images.map((img) => ({
+          eventId: clone.id,
+          url: img.url,
+          caption: img.caption,
+          order: img.order,
+        })),
+      });
+    }
+
+    await Cache.delPattern('events:*');
+    return clone;
+  }
+
+  static async isCreatorOrCollaborator(eventId: string, userId: string): Promise<boolean> {
+    const event = await prisma.event.findUnique({ where: { id: eventId }, select: { creatorId: true } });
+    if (!event) return false;
+    if (event.creatorId === userId) return true;
+    const collab = await prisma.eventCollaborator.findUnique({
+      where: { eventId_userId: { eventId, userId } },
+    });
+    return collab?.accepted === true;
   }
 
   static async toggleBookmark(userId: string, eventId: string) {
@@ -785,7 +900,8 @@ export class EventService {
   static async addEventImage(eventId: string, creatorId: string, url: string, caption?: string) {
     const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) throw ApiError.notFound('Event not found');
-    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only add images to your own events');
+    const canManage = await this.isCreatorOrCollaborator(eventId, creatorId);
+    if (!canManage) throw ApiError.forbidden('You can only add images to your own events');
 
     const lastImage = await prisma.eventImage.findFirst({
       where: { eventId },
@@ -804,7 +920,8 @@ export class EventService {
   static async removeEventImage(imageId: string, eventId: string, creatorId: string) {
     const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) throw ApiError.notFound('Event not found');
-    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only remove images from your own events');
+    const canManage = await this.isCreatorOrCollaborator(eventId, creatorId);
+    if (!canManage) throw ApiError.forbidden('You can only remove images from your own events');
 
     const image = await prisma.eventImage.findFirst({
       where: { id: imageId, eventId },
@@ -829,7 +946,8 @@ export class EventService {
   static async reorderImages(eventId: string, creatorId: string, imageIds: string[]) {
     const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) throw ApiError.notFound('Event not found');
-    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only reorder images for your own events');
+    const canManage = await this.isCreatorOrCollaborator(eventId, creatorId);
+    if (!canManage) throw ApiError.forbidden('You can only reorder images for your own events');
 
     // Validate all IDs belong to this event
     const images = await prisma.eventImage.findMany({ where: { eventId } });
@@ -852,7 +970,8 @@ export class EventService {
   static async updateImage(imageId: string, eventId: string, creatorId: string, caption?: string | null) {
     const event = await prisma.event.findUnique({ where: { id: eventId } });
     if (!event) throw ApiError.notFound('Event not found');
-    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only update images for your own events');
+    const canManage = await this.isCreatorOrCollaborator(eventId, creatorId);
+    if (!canManage) throw ApiError.forbidden('You can only update images for your own events');
 
     const image = await prisma.eventImage.findFirst({ where: { id: imageId, eventId } });
     if (!image) throw ApiError.notFound('Image not found');
@@ -864,6 +983,166 @@ export class EventService {
 
     await Cache.delPattern(`events:${eventId}`);
     return updated;
+  }
+
+  // === Ticket Type methods ===
+
+  static async setTicketTypes(eventId: string, creatorId: string, types: TicketTypeInput[]) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only manage ticket types for your own events');
+
+    // Check if any existing types have tickets sold
+    const existingTypes = await prisma.ticketType.findMany({
+      where: { eventId },
+      include: { _count: { select: { tickets: true } } },
+    });
+    const hasTickets = existingTypes.some((t) => t._count.tickets > 0);
+    if (hasTickets) throw ApiError.badRequest('Cannot replace ticket types when tickets have been sold');
+
+    // Delete existing and create new
+    await prisma.ticketType.deleteMany({ where: { eventId } });
+    const created = await Promise.all(
+      types.map((t, i) =>
+        prisma.ticketType.create({
+          data: {
+            eventId,
+            name: t.name,
+            price: t.price,
+            capacity: t.capacity,
+            description: t.description,
+            sortOrder: t.sortOrder ?? i,
+          },
+        })
+      )
+    );
+
+    await Cache.delPattern(`events:${eventId}`);
+    return created;
+  }
+
+  static async getTicketTypes(eventId: string) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw ApiError.notFound('Event not found');
+
+    return prisma.ticketType.findMany({
+      where: { eventId },
+      orderBy: { sortOrder: 'asc' },
+      include: { _count: { select: { tickets: true } } },
+    });
+  }
+
+  static async updateTicketType(typeId: string, eventId: string, creatorId: string, input: Partial<TicketTypeInput>) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only manage ticket types for your own events');
+
+    const type = await prisma.ticketType.findFirst({ where: { id: typeId, eventId } });
+    if (!type) throw ApiError.notFound('Ticket type not found');
+
+    if (input.capacity !== undefined) {
+      const soldCount = await prisma.ticket.count({ where: { ticketTypeId: typeId } });
+      if (input.capacity < soldCount) {
+        throw ApiError.badRequest(`Cannot reduce capacity below ${soldCount} (tickets already sold)`);
+      }
+    }
+
+    const updated = await prisma.ticketType.update({
+      where: { id: typeId },
+      data: input,
+    });
+
+    await Cache.delPattern(`events:${eventId}`);
+    return updated;
+  }
+
+  static async deleteTicketType(typeId: string, eventId: string, creatorId: string) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (event.creatorId !== creatorId) throw ApiError.forbidden('You can only manage ticket types for your own events');
+
+    const type = await prisma.ticketType.findFirst({ where: { id: typeId, eventId } });
+    if (!type) throw ApiError.notFound('Ticket type not found');
+
+    const soldCount = await prisma.ticket.count({ where: { ticketTypeId: typeId } });
+    if (soldCount > 0) throw ApiError.badRequest('Cannot delete a ticket type with tickets sold');
+
+    await prisma.ticketType.delete({ where: { id: typeId } });
+    await Cache.delPattern(`events:${eventId}`);
+    return { deleted: true };
+  }
+
+  // === Collaborator methods ===
+
+  static async inviteCollaborator(eventId: string, creatorId: string, email: string) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (event.creatorId !== creatorId) throw ApiError.forbidden('Only the event creator can invite collaborators');
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) throw ApiError.notFound('User not found — they must have an Eventful account');
+    if (user.id === creatorId) throw ApiError.badRequest('You cannot invite yourself');
+    if (user.role !== 'CREATOR') throw ApiError.badRequest('Only users with CREATOR role can be co-hosts');
+
+    const existing = await prisma.eventCollaborator.findUnique({
+      where: { eventId_userId: { eventId, userId: user.id } },
+    });
+    if (existing) throw ApiError.conflict('This user is already a collaborator');
+
+    const collab = await prisma.eventCollaborator.create({
+      data: { eventId, userId: user.id },
+      include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
+    });
+
+    InAppNotificationService.create(
+      user.id,
+      `You've been invited as co-host for "${event.title}"`,
+      'collaborator_invite',
+      `/events/${eventId}`,
+    ).catch(() => {});
+
+    await Cache.delPattern(`events:${eventId}`);
+    return collab;
+  }
+
+  static async acceptCollaboration(eventId: string, userId: string) {
+    const collab = await prisma.eventCollaborator.findUnique({
+      where: { eventId_userId: { eventId, userId } },
+    });
+    if (!collab) throw ApiError.notFound('Collaboration invite not found');
+    if (collab.accepted) throw ApiError.badRequest('Already accepted');
+
+    const updated = await prisma.eventCollaborator.update({
+      where: { id: collab.id },
+      data: { accepted: true },
+      include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
+    });
+
+    await Cache.delPattern(`events:${eventId}`);
+    return updated;
+  }
+
+  static async removeCollaborator(eventId: string, creatorId: string, collaboratorId: string) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event) throw ApiError.notFound('Event not found');
+    if (event.creatorId !== creatorId) throw ApiError.forbidden('Only the event creator can remove collaborators');
+
+    const collab = await prisma.eventCollaborator.findFirst({
+      where: { id: collaboratorId, eventId },
+    });
+    if (!collab) throw ApiError.notFound('Collaborator not found');
+
+    await prisma.eventCollaborator.delete({ where: { id: collaboratorId } });
+    await Cache.delPattern(`events:${eventId}`);
+    return { removed: true };
+  }
+
+  static async getCollaborators(eventId: string) {
+    return prisma.eventCollaborator.findMany({
+      where: { eventId },
+      include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
   }
 
   static async getShareLinks(eventId: string): Promise<ShareLinks> {

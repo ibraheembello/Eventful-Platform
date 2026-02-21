@@ -26,6 +26,35 @@ export interface EventSeries {
   createdAt: string;
 }
 
+export interface TicketType {
+  id: string;
+  name: string;
+  price: number;
+  capacity: number;
+  description?: string;
+  sortOrder: number;
+  _count?: { tickets: number };
+  eventId: string;
+}
+
+export interface EventCollaborator {
+  id: string;
+  role: 'CO_HOST';
+  accepted: boolean;
+  createdAt: string;
+  userId: string;
+  user: { id: string; firstName: string; lastName: string; email: string };
+}
+
+export interface InAppNotification {
+  id: string;
+  message: string;
+  link?: string;
+  type: string;
+  read: boolean;
+  createdAt: string;
+}
+
 export interface Event {
   id: string;
   title: string;
@@ -36,6 +65,7 @@ export interface Event {
   price: number;
   imageUrl?: string;
   category?: string;
+  status?: 'DRAFT' | 'PUBLISHED';
   creatorId: string;
   creator?: { id: string; firstName: string; lastName: string };
   _count?: { tickets: number };
@@ -43,6 +73,8 @@ export interface Event {
   seriesId?: string;
   series?: { id: string; title?: string; recurrencePattern?: string; totalOccurrences: number };
   seriesOccurrence?: number;
+  ticketTypes?: TicketType[];
+  collaborators?: EventCollaborator[];
   createdAt: string;
   updatedAt?: string;
 }
@@ -60,6 +92,7 @@ export interface Ticket {
     date: string;
     location: string;
   };
+  ticketType?: { id: string; name: string };
   payment?: { amount: number; status: string };
   user?: { id: string; firstName: string; lastName: string; email: string };
   createdAt?: string;

@@ -11,7 +11,7 @@ import {
   HiOutlineSearch, HiOutlineChatAlt2, HiOutlineMail, HiOutlinePhotograph,
   HiOutlineTag, HiOutlineSwitchHorizontal, HiOutlineClock,
   HiOutlineGlobeAlt, HiOutlineLightBulb, HiOutlineHeart,
-  HiOutlineViewGrid,
+  HiOutlineViewGrid, HiOutlineDocumentText, HiOutlineDuplicate,
 } from 'react-icons/hi';
 import api from '../lib/api';
 import type { Event } from '../types';
@@ -1056,6 +1056,42 @@ export default function LandingPage() {
                 description: 'Create weekly, biweekly, or monthly event series with a single form.',
                 color: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400',
               },
+              {
+                icon: <HiOutlineDocumentText className="w-6 h-6" />,
+                title: 'Draft & Publish',
+                description: 'Save events as drafts, preview them, and publish when you\'re ready.',
+                color: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
+              },
+              {
+                icon: <HiOutlineBell className="w-6 h-6" />,
+                title: 'Notifications',
+                description: 'Real-time in-app notifications for ticket purchases and event updates.',
+                color: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400',
+              },
+              {
+                icon: <HiOutlineDuplicate className="w-6 h-6" />,
+                title: 'Clone Events',
+                description: 'Duplicate any event with one click to quickly create similar events.',
+                color: 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-400',
+              },
+              {
+                icon: <HiOutlineSwitchHorizontal className="w-6 h-6" />,
+                title: 'Ticket Transfer',
+                description: 'Transfer your tickets to friends and family by email.',
+                color: 'bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-400',
+              },
+              {
+                icon: <HiOutlineUserGroup className="w-6 h-6" />,
+                title: 'Co-Host Events',
+                description: 'Invite collaborators to help manage your events together.',
+                color: 'bg-pink-100 dark:bg-pink-900/40 text-pink-600 dark:text-pink-400',
+              },
+              {
+                icon: <HiOutlineTicket className="w-6 h-6" />,
+                title: 'Ticket Tiers',
+                description: 'Create VIP, Regular, and Early Bird ticket types with different pricing.',
+                color: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400',
+              },
             ].map((feature) => (
               <div
                 key={feature.title}
@@ -1460,6 +1496,12 @@ export default function LandingPage() {
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Promo Codes & Discounts</span>
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Social Sign-In (Google & GitHub)</span>
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Password Reset via Email</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Draft & Publish</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Notifications</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Clone Events</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Ticket Transfer</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Co-Host Events</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Ticket Tiers</span>
               </div>
             </div>
             {/* Resources */}

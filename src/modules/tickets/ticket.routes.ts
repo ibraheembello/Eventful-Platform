@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { TicketController } from './ticket.controller';
 import { validate } from '../../middleware/validate';
 import { verifyTicketSchema } from './ticket.schema';
+import { initiateTransferSchema } from './transfer.schema';
 import { authenticate } from '../../middleware/auth';
 import { authorize } from '../../middleware/authorize';
 
@@ -125,5 +126,41 @@ router.post(
  *         description: Ticket not found
  */
 router.put('/:id/cancel', authenticate, TicketController.cancelTicket);
+
+/**
+ * @swagger
+ * /tickets/{id}/transfer:
+ *   post:
+ *     summary: Transfer a ticket to another user by email
+ *     tags: [Tickets]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [recipientEmail]
+ *             properties:
+ *               recipientEmail:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Ticket transferred
+ *       400:
+ *         description: Invalid transfer
+ *       404:
+ *         description: Ticket or recipient not found
+ */
+router.post('/:id/transfer', authenticate, validate(initiateTransferSchema), TicketController.transferTicket);
 
 export default router;
