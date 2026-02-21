@@ -46,9 +46,11 @@ model User {
   profileImage  String?
   googleId      String?        @unique
   githubId      String?        @unique
-  provider      String         @default("local")
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  provider             String         @default("local")
+  resetToken           String?
+  resetTokenExpiresAt  DateTime?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
 
   events        Event[]        @relation("CreatorEvents")
   tickets       Ticket[]
