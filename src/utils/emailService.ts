@@ -229,6 +229,39 @@ export class EmailService {
     await this.send(email, 'Reset Your Password — Eventful', html);
   }
 
+  static async sendTicketTransferSent(
+    email: string,
+    firstName: string,
+    event: { title: string; date: Date | string; location: string },
+    recipientEmail: string,
+  ) {
+    const html = baseTemplate('Ticket Transferred', `
+      <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">Hi ${firstName},</p>
+      <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">
+        Your ticket for <strong style="color:#111827">${event.title}</strong> has been transferred to <strong style="color:#111827">${recipientEmail}</strong>.
+      </p>
+      <p style="color:#9ca3af;font-size:12px;margin:16px 0 0">This ticket is no longer in your account.</p>
+    `);
+    await this.send(email, `Ticket Transferred: ${event.title}`, html);
+  }
+
+  static async sendTicketTransferReceived(
+    email: string,
+    firstName: string,
+    event: { title: string; date: Date | string; location: string },
+    senderEmail: string,
+  ) {
+    const html = baseTemplate('You Received a Ticket!', `
+      <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">Hi ${firstName},</p>
+      <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">
+        <strong style="color:#111827">${senderEmail}</strong> has transferred a ticket to you for <strong style="color:#111827">${event.title}</strong>.
+      </p>
+      ${button('View My Tickets', `${clientUrl}/tickets`)}
+      <p style="color:#9ca3af;font-size:12px;margin:16px 0 0">Your QR code ticket is available in your account.</p>
+    `);
+    await this.send(email, `Ticket Received: ${event.title}`, html);
+  }
+
   static async sendWaitlistNotification(
     email: string,
     firstName: string,

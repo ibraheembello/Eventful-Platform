@@ -43,4 +43,17 @@ export class TicketController {
       next(error);
     }
   }
+
+  static async transferTicket(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await TicketService.transferTicket(
+        param(req, 'id'),
+        req.user!.userId,
+        req.body.recipientEmail,
+      );
+      ApiResponse.success(res, result, 'Ticket transferred successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { HiChartBar, HiTicket, HiUsers, HiCurrencyDollar, HiCalendar, HiOutlineArrowSmRight, HiOutlineClock } from 'react-icons/hi';
+import { HiChartBar, HiTicket, HiUsers, HiCurrencyDollar, HiCalendar, HiOutlineArrowSmRight, HiOutlineClock, HiOutlineDownload } from 'react-icons/hi';
 import { format } from 'date-fns';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -80,6 +80,28 @@ export default function Analytics() {
     return `${amount}`;
   };
 
+  const exportCSV = () => {
+    if (eventAnalytics.length === 0) return;
+    const headers = ['Event Name', 'Date', 'Capacity', 'Tickets Sold', 'Tickets Scanned', 'Check-in Rate', 'Revenue'];
+    const rows = eventAnalytics.map((e) => [
+      `"${e.title.replace(/"/g, '""')}"`,
+      format(new Date(e.date), 'yyyy-MM-dd'),
+      e.capacity,
+      e.ticketsSold,
+      e.ticketsScanned,
+      e.ticketsSold > 0 ? `${Math.round((e.ticketsScanned / e.ticketsSold) * 100)}%` : '0%',
+      e.revenue,
+    ]);
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `eventful-analytics-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -142,6 +164,14 @@ export default function Analytics() {
         <h1 className="text-3xl font-bold text-[rgb(var(--text-primary))] flex items-center gap-2">
           <HiChartBar className="text-emerald-600 dark:text-emerald-400" /> Analytics Dashboard
         </h1>
+        {eventAnalytics.length > 0 && (
+          <button
+            onClick={exportCSV}
+            className="flex items-center gap-2 px-4 py-2 bg-[rgb(var(--bg-primary))] border border-[rgb(var(--border-primary))] text-[rgb(var(--text-primary))] rounded-lg hover:bg-[rgb(var(--bg-secondary))] transition-colors text-sm font-medium"
+          >
+            <HiOutlineDownload className="w-4 h-4" /> Export CSV
+          </button>
+        )}
       </div>
 
       {/* Overview Cards */}

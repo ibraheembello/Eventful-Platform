@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { HiTicket, HiDownload, HiQrcode, HiCheckCircle, HiXCircle, HiOutlineBan } from 'react-icons/hi';
+import { HiTicket, HiDownload, HiQrcode, HiCheckCircle, HiXCircle, HiOutlineBan, HiOutlineSwitchHorizontal } from 'react-icons/hi';
 import { format } from 'date-fns';
 import { QRCodeSVG } from 'qrcode.react';
 import QRCode from 'qrcode';
@@ -15,6 +15,8 @@ export default function MyTickets() {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [transferringId, setTransferringId] = useState<string | null>(null);
+  const [transferEmail, setTransferEmail] = useState('');
 
   useEffect(() => {
     fetchTickets();
@@ -49,6 +51,22 @@ export default function MyTickets() {
       toast.error(error.response?.data?.message || 'Failed to cancel ticket');
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const handleTransferTicket = async (ticketId: string) => {
+    if (!transferEmail.trim()) {
+      toast.error('Please enter a recipient email');
+      return;
+    }
+    try {
+      await api.post(`/tickets/${ticketId}/transfer`, { recipientEmail: transferEmail });
+      toast.success('Ticket transferred successfully');
+      setTransferringId(null);
+      setTransferEmail('');
+      setTickets(prev => prev.filter(t => t.id !== ticketId));
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to transfer ticket');
     }
   };
 
@@ -201,6 +219,13 @@ export default function MyTickets() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {tickets.map((ticket) => (
               <div key={ticket.id} className="glass border border-[rgb(var(--border-primary))] rounded-2xl overflow-hidden card-hover">
+                {ticket.ticketType?.name && (
+                  <div className="px-6 pt-4 pb-0">
+                    <span className="inline-block px-2.5 py-0.5 text-xs font-semibold rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300">
+                      {ticket.ticketType.name}
+                    </span>
+                  </div>
+                )}
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <h3 className="text-lg font-semibold text-[rgb(var(--text-primary))] line-clamp-2">
@@ -251,16 +276,57 @@ export default function MyTickets() {
                       <HiDownload className="w-4 h-4" />
                     </button>
                     {ticket.status === 'ACTIVE' && (
-                      <button
-                        onClick={() => handleCancelTicket(ticket.id)}
-                        disabled={cancellingId === ticket.id}
-                        aria-label="Cancel ticket"
-                        className="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition disabled:opacity-50"
-                      >
-                        <HiOutlineBan className="w-4 h-4" />
-                      </button>
+                      <>
+                        <button
+                          onClick={() => {
+                            setTransferringId(transferringId === ticket.id ? null : ticket.id);
+                            setTransferEmail('');
+                          }}
+                          aria-label="Transfer ticket"
+                          className="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition"
+                        >
+                          <HiOutlineSwitchHorizontal className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleCancelTicket(ticket.id)}
+                          disabled={cancellingId === ticket.id}
+                          aria-label="Cancel ticket"
+                          className="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-sm rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition disabled:opacity-50"
+                        >
+                          <HiOutlineBan className="w-4 h-4" />
+                        </button>
+                      </>
                     )}
                   </div>
+
+                  {transferringId === ticket.id && (
+                    <div className="mt-4 p-3 bg-[rgb(var(--bg-tertiary))] rounded-lg border border-[rgb(var(--border-primary))]">
+                      <label className="block text-sm font-medium text-[rgb(var(--text-secondary))] mb-2">
+                        Transfer to (recipient email)
+                      </label>
+                      <input
+                        type="email"
+                        value={transferEmail}
+                        onChange={(e) => setTransferEmail(e.target.value)}
+                        placeholder="recipient@example.com"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-[rgb(var(--border-primary))] bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] placeholder:text-[rgb(var(--text-tertiary))] focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleTransferTicket(ticket.id)}
+                          className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+                        >
+                          Transfer
+                        </button>
+                        <button
+                          onClick={() => { setTransferringId(null); setTransferEmail(''); }}
+                          className="flex-1 px-3 py-2 border border-[rgb(var(--border-primary))] text-[rgb(var(--text-primary))] text-sm rounded-lg hover:bg-[rgb(var(--bg-secondary))] transition"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

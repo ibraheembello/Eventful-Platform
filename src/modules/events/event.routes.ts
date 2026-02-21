@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { EventController } from './event.controller';
 import { validate } from '../../middleware/validate';
-import { createEventSchema, updateEventSchema, createCommentSchema, addEventImageSchema, reorderImagesSchema, updateImageSchema } from './event.schema';
-import { authenticate } from '../../middleware/auth';
+import { createEventSchema, updateEventSchema, createCommentSchema, addEventImageSchema, reorderImagesSchema, updateImageSchema, createTicketTypesSchema, updateTicketTypeSchema } from './event.schema';
+import { inviteCollaboratorSchema } from './collaborator.schema';
+import { authenticate, optionalAuthenticate } from '../../middleware/auth';
 import { authorize } from '../../middleware/authorize';
 
 const router = Router();
@@ -317,7 +318,7 @@ router.delete('/series/:seriesId', authenticate, authorize('CREATOR'), EventCont
  *       404:
  *         description: Event not found
  */
-router.get('/:id', EventController.getById);
+router.get('/:id', optionalAuthenticate, EventController.getById);
 
 /**
  * @swagger
@@ -791,6 +792,16 @@ router.delete('/:id/images/:imageId', authenticate, authorize('CREATOR'), EventC
  *       200:
  *         description: Bookmark toggled
  */
+router.put('/:id/publish', authenticate, authorize('CREATOR'), EventController.togglePublish);
+router.post('/:id/duplicate', authenticate, authorize('CREATOR'), EventController.duplicate);
+router.post('/:id/ticket-types', authenticate, authorize('CREATOR'), validate(createTicketTypesSchema), EventController.setTicketTypes);
+router.get('/:id/ticket-types', EventController.getTicketTypes);
+router.put('/:id/ticket-types/:typeId', authenticate, authorize('CREATOR'), validate(updateTicketTypeSchema), EventController.updateTicketType);
+router.delete('/:id/ticket-types/:typeId', authenticate, authorize('CREATOR'), EventController.deleteTicketType);
+router.post('/:id/collaborators', authenticate, authorize('CREATOR'), validate(inviteCollaboratorSchema), EventController.inviteCollaborator);
+router.get('/:id/collaborators', authenticate, EventController.getCollaborators);
+router.put('/:id/collaborators/accept', authenticate, authorize('CREATOR'), EventController.acceptCollaboration);
+router.delete('/:id/collaborators/:collabId', authenticate, authorize('CREATOR'), EventController.removeCollaborator);
 router.post('/:id/bookmark', authenticate, EventController.toggleBookmark);
 
 /**

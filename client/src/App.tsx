@@ -27,6 +27,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import Categories from './pages/Categories';
 import SeriesDetail from './pages/SeriesDetail';
+import NotificationsInbox from './pages/NotificationsInbox';
 
 function HomeRoute() {
   return <LandingPage />;
@@ -55,6 +56,7 @@ function App() {
 
             <Route path="/tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Reminders /></ProtectedRoute>} />
+            <Route path="/notifications/inbox" element={<ProtectedRoute><NotificationsInbox /></ProtectedRoute>} />
             <Route path="/payment/callback" element={<ProtectedRoute><PaymentCallback /></ProtectedRoute>} />
             <Route path="/verify-ticket" element={<ProtectedRoute roles={['CREATOR']}><VerifyTicket /></ProtectedRoute>} />
             <Route path="/events/create" element={<ProtectedRoute roles={['CREATOR']}><CreateEvent /></ProtectedRoute>} />

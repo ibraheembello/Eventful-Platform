@@ -6,10 +6,14 @@ import { Cache } from '../../utils/cache';
 import { TicketService } from '../tickets/ticket.service';
 import { NotificationService } from '../notifications/notification.service';
 import { EmailService } from '../../utils/emailService';
+import { InAppNotificationService } from '../inAppNotifications/in-app-notification.service';
 
 export class PaymentService {
-  static async initializePayment(userId: string, eventId: string, promoCodeStr?: string) {
-    const event = await prisma.event.findUnique({ where: { id: eventId } });
+  static async initializePayment(userId: string, eventId: string, promoCodeStr?: string, ticketTypeId?: string) {
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: { ticketTypes: true },
+    });
 
     if (!event) {
       throw ApiError.notFound('Event not found');
@@ -20,10 +24,32 @@ export class PaymentService {
       throw ApiError.badRequest('You cannot purchase a ticket for your own event');
     }
 
-    // Check capacity
-    const ticketCount = await prisma.ticket.count({ where: { eventId } });
-    if (ticketCount >= event.capacity) {
-      throw ApiError.badRequest('Event is sold out');
+    // Determine pricing based on ticket types
+    let basePrice = event.price;
+    let capacityToCheck = event.capacity;
+    let ticketTypeIdToStore: string | undefined;
+
+    if (event.ticketTypes.length > 0) {
+      // Event has ticket types — ticketTypeId is required
+      if (!ticketTypeId) throw ApiError.badRequest('Ticket type is required for this event');
+      const ticketType = event.ticketTypes.find((t) => t.id === ticketTypeId);
+      if (!ticketType) throw ApiError.notFound('Ticket type not found');
+
+      basePrice = ticketType.price;
+      capacityToCheck = ticketType.capacity;
+      ticketTypeIdToStore = ticketType.id;
+
+      // Check type-specific capacity
+      const typeTicketCount = await prisma.ticket.count({ where: { ticketTypeId } });
+      if (typeTicketCount >= ticketType.capacity) {
+        throw ApiError.badRequest(`${ticketType.name} tickets are sold out`);
+      }
+    } else {
+      // Legacy flow — check overall capacity
+      const ticketCount = await prisma.ticket.count({ where: { eventId } });
+      if (ticketCount >= event.capacity) {
+        throw ApiError.badRequest('Event is sold out');
+      }
     }
 
     // Check if user already has a ticket for this event
@@ -43,9 +69,9 @@ export class PaymentService {
     // Promo code handling
     let promoCodeId: string | undefined;
     let discountAmount = 0;
-    let finalPrice = event.price;
+    let finalPrice = basePrice;
 
-    if (promoCodeStr && event.price > 0) {
+    if (promoCodeStr && basePrice > 0) {
       const promoCode = await prisma.promoCode.findUnique({
         where: { code_creatorId: { code: promoCodeStr.toUpperCase(), creatorId: event.creatorId } },
       });
@@ -57,12 +83,12 @@ export class PaymentService {
       if (promoCode.eventId && promoCode.eventId !== eventId) throw ApiError.badRequest('This promo code is not valid for this event');
 
       if (promoCode.discountType === 'PERCENTAGE') {
-        discountAmount = Math.round(event.price * promoCode.discountValue / 100);
+        discountAmount = Math.round(basePrice * promoCode.discountValue / 100);
       } else {
-        discountAmount = Math.min(promoCode.discountValue, event.price);
+        discountAmount = Math.min(promoCode.discountValue, basePrice);
       }
 
-      finalPrice = Math.max(0, event.price - discountAmount);
+      finalPrice = Math.max(0, basePrice - discountAmount);
       promoCodeId = promoCode.id;
     }
 
@@ -77,6 +103,7 @@ export class PaymentService {
           amount: 0,
           discountAmount,
           promoCodeId,
+          ticketTypeId: ticketTypeIdToStore,
           paystackReference: reference,
           paystackAccessCode: 'free',
           paystackAuthUrl: 'free',
@@ -90,10 +117,18 @@ export class PaymentService {
         await prisma.promoCode.update({ where: { id: promoCodeId }, data: { usedCount: { increment: 1 } } });
       }
 
-      const ticket = await TicketService.createTicket(userId, eventId, payment.id);
+      const ticket = await TicketService.createTicket(userId, eventId, payment.id, ticketTypeIdToStore);
 
       // Send confirmation email
       EmailService.sendTicketConfirmation(user.email, user.firstName, event, 0).catch(() => {});
+
+      // In-app notification
+      InAppNotificationService.create(
+        userId,
+        `Ticket confirmed for "${event.title}"`,
+        'ticket_confirmed',
+        `/events/${eventId}`,
+      ).catch(() => {});
 
       // Create automatic reminder if event has default
       if (event.defaultReminderValue && event.defaultReminderUnit) {
@@ -121,6 +156,7 @@ export class PaymentService {
           eventTitle: event.title,
           promoCodeId,
           discountAmount,
+          ticketTypeId: ticketTypeIdToStore,
         },
       }),
     });
@@ -140,6 +176,7 @@ export class PaymentService {
         amount: finalPrice,
         discountAmount,
         promoCodeId,
+        ticketTypeId: ticketTypeIdToStore,
         paystackReference: reference,
         paystackAccessCode: data.data.access_code,
         paystackAuthUrl: data.data.authorization_url,
@@ -201,7 +238,8 @@ export class PaymentService {
     const ticket = await TicketService.createTicket(
       payment.userId,
       payment.eventId,
-      payment.id
+      payment.id,
+      payment.ticketTypeId ?? undefined,
     );
 
     // Increment promo code usage on successful payment
@@ -230,6 +268,13 @@ export class PaymentService {
       if (user) {
         EmailService.sendTicketConfirmation(user.email, user.firstName, event, updatedPayment.amount).catch(() => {});
       }
+      // In-app notification
+      InAppNotificationService.create(
+        payment.userId,
+        `Ticket confirmed for "${event.title}"`,
+        'ticket_confirmed',
+        `/events/${event.id}`,
+      ).catch(() => {});
     }
 
     await Cache.delPattern('analytics:*');

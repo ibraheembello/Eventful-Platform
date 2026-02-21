@@ -19,6 +19,7 @@ import notificationRoutes from './modules/notifications/notification.routes';
 import analyticsRoutes from './modules/analytics/analytics.routes';
 import uploadRoutes from './modules/upload/upload.routes';
 import promoCodeRoutes from './modules/promoCodes/promo-code.routes';
+import inAppNotificationRoutes from './modules/inAppNotifications/in-app-notification.routes';
 
 dotenv.config();
 
@@ -74,6 +75,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/promo-codes', promoCodeRoutes);
+app.use('/api/notifications', inAppNotificationRoutes);
 
 // Serve uploaded images
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));

@@ -33,3 +33,21 @@ export function authenticate(req: Request, _res: Response, next: NextFunction) {
     return next(ApiError.unauthorized('Invalid or expired access token'));
   }
 }
+
+export function optionalAuthenticate(req: Request, _res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET || 'secret') as AuthPayload;
+    req.user = decoded;
+  } catch {
+    // Invalid token — continue without user
+  }
+  next();
+}

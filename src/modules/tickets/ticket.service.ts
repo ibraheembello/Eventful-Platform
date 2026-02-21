@@ -3,9 +3,10 @@ import { ApiError } from '../../utils/apiError';
 import { Cache } from '../../utils/cache';
 import { EmailService } from '../../utils/emailService';
 import { QRCodeService } from '../qrcode/qrcode.service';
+import { InAppNotificationService } from '../inAppNotifications/in-app-notification.service';
 
 export class TicketService {
-  static async createTicket(userId: string, eventId: string, paymentId: string) {
+  static async createTicket(userId: string, eventId: string, paymentId: string, ticketTypeId?: string) {
     const qrData = await QRCodeService.generateQRCode('pending', eventId, userId);
 
     const ticket = await prisma.ticket.create({
@@ -13,6 +14,7 @@ export class TicketService {
         userId,
         eventId,
         paymentId,
+        ticketTypeId,
         qrCode: qrData.qrCode,
         qrCodeData: qrData.token,
       },
@@ -197,6 +199,100 @@ export class TicketService {
     this.notifyNextWaitlistUser(ticket.event.id, ticket.event.title).catch(() => {});
 
     return cancelled;
+  }
+
+  static async transferTicket(ticketId: string, fromUserId: string, recipientEmail: string) {
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: {
+        event: { select: { id: true, title: true, date: true, location: true } },
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+    });
+
+    if (!ticket) throw ApiError.notFound('Ticket not found');
+    if (ticket.userId !== fromUserId) throw ApiError.forbidden('You can only transfer your own tickets');
+    if (ticket.status !== 'ACTIVE') throw ApiError.badRequest('Only active tickets can be transferred');
+
+    const recipient = await prisma.user.findUnique({ where: { email: recipientEmail } });
+    if (!recipient) throw ApiError.notFound('Recipient not found — they must have an Eventful account');
+    if (recipient.id === fromUserId) throw ApiError.badRequest('You cannot transfer a ticket to yourself');
+
+    // Check recipient doesn't already have a ticket for this event
+    const existingTicket = await prisma.ticket.findFirst({
+      where: { userId: recipient.id, eventId: ticket.eventId, status: { not: 'CANCELLED' } },
+    });
+    if (existingTicket) throw ApiError.conflict('Recipient already has a ticket for this event');
+
+    // Check no pending transfer exists for this ticket
+    const pendingTransfer = await prisma.ticketTransfer.findFirst({
+      where: { ticketId, status: 'PENDING' },
+    });
+    if (pendingTransfer) throw ApiError.badRequest('This ticket already has a pending transfer');
+
+    // Execute transfer in transaction
+    const result = await prisma.$transaction(async (tx) => {
+      const transfer = await tx.ticketTransfer.create({
+        data: {
+          ticketId,
+          fromUserId,
+          toUserId: recipient.id,
+          status: 'COMPLETED',
+        },
+      });
+
+      await tx.ticket.update({
+        where: { id: ticketId },
+        data: { userId: recipient.id },
+      });
+
+      return transfer;
+    });
+
+    // Regenerate QR code for new owner
+    const newQR = await QRCodeService.generateQRCode(ticketId, ticket.eventId, recipient.id);
+    await prisma.ticket.update({
+      where: { id: ticketId },
+      data: { qrCode: newQR.qrCode, qrCodeData: newQR.token },
+    });
+
+    // Clear caches
+    await Promise.all([
+      Cache.delPattern(`tickets:user:${fromUserId}:*`),
+      Cache.delPattern(`tickets:user:${recipient.id}:*`),
+      Cache.delPattern('events:*'),
+    ]);
+
+    // Fire-and-forget emails and notifications
+    EmailService.sendTicketTransferSent(
+      ticket.user.email,
+      ticket.user.firstName,
+      ticket.event,
+      recipientEmail,
+    ).catch(() => {});
+
+    EmailService.sendTicketTransferReceived(
+      recipient.email,
+      recipient.firstName,
+      ticket.event,
+      ticket.user.email,
+    ).catch(() => {});
+
+    InAppNotificationService.create(
+      fromUserId,
+      `Ticket for "${ticket.event.title}" transferred to ${recipientEmail}`,
+      'ticket_transferred',
+      `/tickets`,
+    ).catch(() => {});
+
+    InAppNotificationService.create(
+      recipient.id,
+      `You received a ticket for "${ticket.event.title}" from ${ticket.user.email}`,
+      'ticket_received',
+      `/tickets`,
+    ).catch(() => {});
+
+    return result;
   }
 
   private static async notifyNextWaitlistUser(eventId: string, eventTitle: string) {
