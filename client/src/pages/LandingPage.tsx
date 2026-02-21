@@ -12,6 +12,7 @@ import {
   HiOutlineTag, HiOutlineSwitchHorizontal, HiOutlineClock,
   HiOutlineGlobeAlt, HiOutlineLightBulb, HiOutlineHeart,
   HiOutlineViewGrid, HiOutlineDocumentText, HiOutlineDuplicate,
+  HiOutlineMap, HiOutlineTemplate,
 } from 'react-icons/hi';
 import api from '../lib/api';
 import type { Event } from '../types';
@@ -698,7 +699,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start animate-[fadeIn_1.2s_ease-out]">
                 {user ? (
                   <Link
-                    to="/events"
+                    to="/dashboard"
                     className="w-full sm:w-auto px-8 py-3.5 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                   >
                     Go to Dashboard
@@ -1091,6 +1092,30 @@ export default function LandingPage() {
                 title: 'Ticket Tiers',
                 description: 'Create VIP, Regular, and Early Bird ticket types with different pricing.',
                 color: 'bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-400',
+              },
+              {
+                icon: <HiOutlineLightBulb className="w-6 h-6" />,
+                title: 'Automated Deployments',
+                description: 'CI/CD pipeline with GitHub Actions — push to deploy automatically.',
+                color: 'bg-lime-100 dark:bg-lime-900/40 text-lime-600 dark:text-lime-400',
+              },
+              {
+                icon: <HiOutlineTemplate className="w-6 h-6" />,
+                title: 'Personal Dashboard',
+                description: 'Your personalized event hub with stats, upcoming events, and quick actions.',
+                color: 'bg-sky-100 dark:bg-sky-900/40 text-sky-600 dark:text-sky-400',
+              },
+              {
+                icon: <HiOutlineMap className="w-6 h-6" />,
+                title: 'Interactive Maps',
+                description: 'Discover events near you on an interactive map with location markers.',
+                color: 'bg-teal-100 dark:bg-teal-900/40 text-teal-600 dark:text-teal-400',
+              },
+              {
+                icon: <HiOutlineShieldCheck className="w-6 h-6" />,
+                title: 'Platform Management',
+                description: 'Admin tools for user moderation, role management, and platform oversight.',
+                color: 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400',
               },
             ].map((feature) => (
               <div
@@ -1502,6 +1527,10 @@ export default function LandingPage() {
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Ticket Transfer</span>
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Co-Host Events</span>
                 <span className="block text-sm text-[rgb(var(--text-secondary))]">Ticket Tiers</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Personal Dashboard</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Interactive Maps</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">Admin Panel</span>
+                <span className="block text-sm text-[rgb(var(--text-secondary))]">CI/CD Pipeline</span>
               </div>
             </div>
             {/* Resources */}

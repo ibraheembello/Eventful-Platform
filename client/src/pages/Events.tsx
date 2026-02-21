@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import type { Event } from '../types';
 import { useAuth } from '../context/AuthContext';
@@ -8,11 +8,15 @@ import {
   HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers,
   HiOutlineCurrencyDollar, HiOutlineSearch, HiOutlinePlus, HiOutlineTag,
   HiOutlineFilter, HiOutlineX, HiOutlineBookmark, HiBookmark, HiOutlineRefresh,
+  HiOutlineMap, HiOutlineViewGrid,
 } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 
+const EventMap = lazy(() => import('../components/EventMap'));
+
 export default function Events() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [events, setEvents] = useState<Event[]>([]);
@@ -22,6 +26,7 @@ export default function Events() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalEvents, setTotalEvents] = useState(0);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const limit = 12;
 
   // Read filters from URL
@@ -137,6 +142,34 @@ export default function Events() {
                 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none w-full sm:w-64
                 bg-[rgb(var(--bg-primary))] text-[rgb(var(--text-primary))] transition-all"
             />
+          </div>
+
+          {/* View Toggle */}
+          <div className="flex items-center border border-[rgb(var(--border-primary))] rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-1 px-3 py-2.5 text-sm font-medium transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-tertiary))]'
+              }`}
+              aria-label="List view"
+            >
+              <HiOutlineViewGrid className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('map')}
+              className={`flex items-center gap-1 px-3 py-2.5 text-sm font-medium transition-colors ${
+                viewMode === 'map'
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-[rgb(var(--text-secondary))] hover:bg-[rgb(var(--bg-tertiary))]'
+              }`}
+              aria-label="Map view"
+            >
+              <HiOutlineMap className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Filter Toggle */}
@@ -409,8 +442,19 @@ export default function Events() {
             Showing {(page - 1) * limit + 1}&ndash;{Math.min(page * limit, totalEvents)} of {totalEvents} events
           </p>
 
+          {/* Map View */}
+          {viewMode === 'map' && (
+            <Suspense fallback={<div className="h-[500px] shimmer rounded-2xl" />}>
+              <EventMap
+                events={events}
+                className="h-[500px] mb-6"
+                onEventClick={(id) => navigate(`/events/${id}`)}
+              />
+            </Suspense>
+          )}
+
           {/* Events Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ${viewMode === 'map' ? 'mt-6' : ''}`}>
             {events.map((event) => {
               const soldOut = (event._count?.tickets || 0) >= event.capacity;
               const almostSoldOut = (event._count?.tickets || 0) / event.capacity > 0.8;

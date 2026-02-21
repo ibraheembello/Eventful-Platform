@@ -1,7 +1,7 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { HiOutlineTicket, HiOutlineBell, HiOutlineChartBar, HiOutlineCalendar, HiOutlineLogout, HiOutlineMenu, HiOutlineX, HiOutlineQrcode, HiOutlineMoon, HiOutlineSun, HiOutlineUserCircle, HiOutlineHome, HiOutlineBookmark, HiOutlineTag, HiOutlineClock, HiOutlineViewGrid, HiOutlineChevronDown } from 'react-icons/hi';
+import { HiOutlineTicket, HiOutlineBell, HiOutlineChartBar, HiOutlineCalendar, HiOutlineLogout, HiOutlineMenu, HiOutlineX, HiOutlineQrcode, HiOutlineMoon, HiOutlineSun, HiOutlineUserCircle, HiOutlineHome, HiOutlineBookmark, HiOutlineTag, HiOutlineClock, HiOutlineViewGrid, HiOutlineChevronDown, HiOutlineShieldCheck, HiOutlineTemplate } from 'react-icons/hi';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 
@@ -94,6 +94,9 @@ export default function Layout() {
                 </Link>
                 {user && (
                   <>
+                    <Link to="/dashboard" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
+                      <HiOutlineTemplate className="w-4 h-4" /> Dashboard
+                    </Link>
                     <NavDropdown label="My Events" icon={<HiOutlineTicket className="w-4 h-4" />}>
                       {(close) => (
                         <>
@@ -104,13 +107,24 @@ export default function Layout() {
                         </>
                       )}
                     </NavDropdown>
-                    {user.role === 'CREATOR' && (
+                    {(user.role === 'CREATOR' || user.role === 'ADMIN') && (
                       <NavDropdown label="Manage" icon={<HiOutlineChartBar className="w-4 h-4" />}>
                         {(close) => (
                           <>
                             <DropdownLink to="/analytics" icon={<HiOutlineChartBar className="w-4 h-4" />} label="Analytics" onClick={close} />
                             <DropdownLink to="/verify-ticket" icon={<HiOutlineQrcode className="w-4 h-4" />} label="Verify Ticket" onClick={close} />
                             <DropdownLink to="/promo-codes" icon={<HiOutlineTag className="w-4 h-4" />} label="Promo Codes" onClick={close} />
+                          </>
+                        )}
+                      </NavDropdown>
+                    )}
+                    {user.role === 'ADMIN' && (
+                      <NavDropdown label="Admin" icon={<HiOutlineShieldCheck className="w-4 h-4" />}>
+                        {(close) => (
+                          <>
+                            <DropdownLink to="/admin" icon={<HiOutlineShieldCheck className="w-4 h-4" />} label="Admin Dashboard" onClick={close} />
+                            <DropdownLink to="/admin/users" icon={<HiOutlineUserCircle className="w-4 h-4" />} label="Manage Users" onClick={close} />
+                            <DropdownLink to="/admin/events" icon={<HiOutlineCalendar className="w-4 h-4" />} label="Manage Events" onClick={close} />
                           </>
                         )}
                       </NavDropdown>
@@ -186,6 +200,7 @@ export default function Layout() {
             <Link to="/categories" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Categories</Link>
             {user ? (
               <>
+                <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Dashboard</Link>
                 <Link to="/tickets" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">My Tickets</Link>
                 <Link to="/notifications/inbox" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">
                   Notifications {unreadCount > 0 && <span className="px-1.5 py-0.5 text-[10px] font-bold text-white bg-red-500 rounded-full">{unreadCount}</span>}
@@ -193,7 +208,7 @@ export default function Layout() {
                 <Link to="/notifications" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Reminders</Link>
                 <Link to="/saved" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Saved Events</Link>
                 <Link to="/waitlists" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Waitlists</Link>
-                {user.role === 'CREATOR' && (
+                {(user.role === 'CREATOR' || user.role === 'ADMIN') && (
                   <>
                     <div className="pt-2 border-t border-[rgb(var(--border-primary))]">
                       <p className="px-3 py-1 text-xs font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wider">Creator Tools</p>
@@ -201,6 +216,16 @@ export default function Layout() {
                     <Link to="/analytics" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Analytics</Link>
                     <Link to="/verify-ticket" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Verify Ticket</Link>
                     <Link to="/promo-codes" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Promo Codes</Link>
+                  </>
+                )}
+                {user.role === 'ADMIN' && (
+                  <>
+                    <div className="pt-2 border-t border-[rgb(var(--border-primary))]">
+                      <p className="px-3 py-1 text-xs font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wider">Admin</p>
+                    </div>
+                    <Link to="/admin" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Admin Dashboard</Link>
+                    <Link to="/admin/users" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Manage Users</Link>
+                    <Link to="/admin/events" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Manage Events</Link>
                   </>
                 )}
                 <div className="pt-2 border-t border-[rgb(var(--border-primary))]">

@@ -262,6 +262,46 @@ router.get('/attending', authenticate, authorize('EVENTEE', 'CREATOR'), EventCon
  *       404:
  *         description: Series not found
  */
+/**
+ * @swagger
+ * /events/nearby:
+ *   get:
+ *     summary: Find events near a location
+ *     tags: [Events]
+ *     security: []
+ *     parameters:
+ *       - in: query
+ *         name: lat
+ *         required: true
+ *         schema:
+ *           type: number
+ *         description: Latitude
+ *       - in: query
+ *         name: lng
+ *         required: true
+ *         schema:
+ *           type: number
+ *         description: Longitude
+ *       - in: query
+ *         name: radius
+ *         schema:
+ *           type: number
+ *           default: 50
+ *         description: Search radius in km
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Nearby events sorted by distance
+ */
+router.get('/nearby', EventController.getNearby);
+
 router.get('/series/:seriesId', EventController.getSeriesEvents);
 
 /**

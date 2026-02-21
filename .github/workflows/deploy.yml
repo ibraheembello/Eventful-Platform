@@ -1,0 +1,40 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm install --ignore-scripts
+      - run: npx prisma generate
+      - run: npm test
+      - run: npm run build:backend
+      - run: cd client && npm install && npm run build
+
+  deploy:
+    needs: test-and-build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            export PATH=/opt/bitnami/node/bin:$PATH
+            cd /home/bitnami/Eventful-Platform
+            git stash && git pull origin master
+            npx prisma generate && npx prisma migrate deploy
+            npm run build:backend && npm run build:frontend
+            pm2 reload eventful-api
