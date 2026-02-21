@@ -1,8 +1,52 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { HiOutlineTicket, HiOutlineBell, HiOutlineChartBar, HiOutlineCalendar, HiOutlineLogout, HiOutlineMenu, HiOutlineX, HiOutlineQrcode, HiOutlineMoon, HiOutlineSun, HiOutlineUserCircle, HiOutlineHome, HiOutlineBookmark, HiOutlineTag, HiOutlineClock, HiOutlineViewGrid } from 'react-icons/hi';
-import { useState } from 'react';
+import { HiOutlineTicket, HiOutlineBell, HiOutlineChartBar, HiOutlineCalendar, HiOutlineLogout, HiOutlineMenu, HiOutlineX, HiOutlineQrcode, HiOutlineMoon, HiOutlineSun, HiOutlineUserCircle, HiOutlineHome, HiOutlineBookmark, HiOutlineTag, HiOutlineClock, HiOutlineViewGrid, HiOutlineChevronDown } from 'react-icons/hi';
+import { useState, useRef, useEffect } from 'react';
+
+function NavDropdown({ label, icon, children }: { label: string; icon: React.ReactNode; children: (close: () => void) => React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors"
+      >
+        {icon}
+        {label}
+        <HiOutlineChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 w-48 bg-[rgb(var(--bg-primary))] border border-[rgb(var(--border-primary))] rounded-lg shadow-lg py-1 z-50">
+          {children(() => setOpen(false))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DropdownLink({ to, icon, label, onClick }: { to: string; icon: React.ReactNode; label: string; onClick: () => void }) {
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className="flex items-center gap-2 px-4 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-[rgb(var(--bg-secondary))] transition-colors"
+    >
+      {icon}
+      {label}
+    </Link>
+  );
+}
 
 export default function Layout() {
   const { user, logout } = useAuth();
@@ -22,7 +66,7 @@ export default function Layout() {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link to="/" className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">Eventful</Link>
-              <div className="hidden md:flex ml-10 space-x-4">
+              <div className="hidden md:flex ml-10 space-x-1">
                 <Link to="/" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
                   <HiOutlineHome className="w-4 h-4" /> Home
                 </Link>
@@ -34,30 +78,26 @@ export default function Layout() {
                 </Link>
                 {user && (
                   <>
-                    <Link to="/tickets" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
-                      <HiOutlineTicket className="w-4 h-4" /> My Tickets
-                    </Link>
-                    <Link to="/notifications" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
-                      <HiOutlineBell className="w-4 h-4" /> Reminders
-                    </Link>
-                    <Link to="/saved" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
-                      <HiOutlineBookmark className="w-4 h-4" /> Saved
-                    </Link>
-                    <Link to="/waitlists" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
-                      <HiOutlineClock className="w-4 h-4" /> Waitlists
-                    </Link>
+                    <NavDropdown label="My Events" icon={<HiOutlineTicket className="w-4 h-4" />}>
+                      {(close) => (
+                        <>
+                          <DropdownLink to="/tickets" icon={<HiOutlineTicket className="w-4 h-4" />} label="My Tickets" onClick={close} />
+                          <DropdownLink to="/notifications" icon={<HiOutlineBell className="w-4 h-4" />} label="Reminders" onClick={close} />
+                          <DropdownLink to="/saved" icon={<HiOutlineBookmark className="w-4 h-4" />} label="Saved" onClick={close} />
+                          <DropdownLink to="/waitlists" icon={<HiOutlineClock className="w-4 h-4" />} label="Waitlists" onClick={close} />
+                        </>
+                      )}
+                    </NavDropdown>
                     {user.role === 'CREATOR' && (
-                      <>
-                        <Link to="/analytics" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
-                          <HiOutlineChartBar className="w-4 h-4" /> Analytics
-                        </Link>
-                        <Link to="/verify-ticket" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
-                          <HiOutlineQrcode className="w-4 h-4" /> Verify Ticket
-                        </Link>
-                        <Link to="/promo-codes" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
-                          <HiOutlineTag className="w-4 h-4" /> Promo Codes
-                        </Link>
-                      </>
+                      <NavDropdown label="Manage" icon={<HiOutlineChartBar className="w-4 h-4" />}>
+                        {(close) => (
+                          <>
+                            <DropdownLink to="/analytics" icon={<HiOutlineChartBar className="w-4 h-4" />} label="Analytics" onClick={close} />
+                            <DropdownLink to="/verify-ticket" icon={<HiOutlineQrcode className="w-4 h-4" />} label="Verify Ticket" onClick={close} />
+                            <DropdownLink to="/promo-codes" icon={<HiOutlineTag className="w-4 h-4" />} label="Promo Codes" onClick={close} />
+                          </>
+                        )}
+                      </NavDropdown>
                     )}
                   </>
                 )}
@@ -124,6 +164,9 @@ export default function Layout() {
                 <Link to="/waitlists" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Waitlists</Link>
                 {user.role === 'CREATOR' && (
                   <>
+                    <div className="pt-2 border-t border-[rgb(var(--border-primary))]">
+                      <p className="px-3 py-1 text-xs font-semibold text-[rgb(var(--text-secondary))] uppercase tracking-wider">Creator Tools</p>
+                    </div>
                     <Link to="/analytics" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Analytics</Link>
                     <Link to="/verify-ticket" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Verify Ticket</Link>
                     <Link to="/promo-codes" onClick={() => setMenuOpen(false)} className="block px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:bg-[rgb(var(--bg-secondary))] rounded-md">Promo Codes</Link>
