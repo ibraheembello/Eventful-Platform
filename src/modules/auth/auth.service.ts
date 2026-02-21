@@ -166,8 +166,7 @@ export class AuthService {
         given_name = info.given_name;
         family_name = info.family_name;
         picture = info.picture;
-      } catch (err) {
-        console.log('[Google Auth] Code exchange failed:', (err as Error).message);
+      } catch {
         throw ApiError.unauthorized('Failed to authenticate with Google');
       }
     } else if (input.credential) {
