@@ -6,6 +6,8 @@ import {
   HiOutlineTicket,
   HiOutlineCurrencyDollar,
   HiOutlineCog,
+  HiOutlineMail,
+  HiOutlineEye,
 } from 'react-icons/hi';
 import {
   PieChart,
@@ -47,12 +49,23 @@ const ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Admins',
 };
 
+interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
 
   useEffect(() => {
     fetchStats();
+    fetchContactMessages();
   }, []);
 
   const fetchStats = async () => {
@@ -67,6 +80,22 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchContactMessages = async () => {
+    try {
+      const res = await api.get('/contact/messages');
+      if (res.data.success) setContactMessages(res.data.data);
+    } catch {}
+  };
+
+  const markAsRead = async (id: string) => {
+    try {
+      await api.put(`/contact/messages/${id}/read`);
+      setContactMessages((prev) =>
+        prev.map((m) => (m.id === id ? { ...m, read: true } : m))
+      );
+    } catch {}
   };
 
   const formatCurrency = (amount: number) =>
@@ -335,6 +364,52 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Contact Messages */}
+      {contactMessages.length > 0 && (
+        <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-[rgb(var(--text-primary))] flex items-center gap-2">
+              <HiOutlineMail className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              Recent Contact Messages
+            </h2>
+            <span className="text-xs text-[rgb(var(--text-tertiary))]">Latest 5</span>
+          </div>
+          <div className="space-y-3">
+            {contactMessages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${
+                  msg.read
+                    ? 'border-[rgb(var(--border-primary))] bg-[rgb(var(--bg-secondary))]'
+                    : 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20'
+                }`}
+              >
+                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${msg.read ? 'bg-gray-300 dark:bg-gray-600' : 'bg-emerald-500'}`} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-sm font-medium text-[rgb(var(--text-primary))]">{msg.name}</span>
+                    <span className="text-xs text-[rgb(var(--text-tertiary))]">{msg.email}</span>
+                  </div>
+                  <p className="text-sm text-[rgb(var(--text-secondary))] truncate">{msg.message}</p>
+                  <p className="text-xs text-[rgb(var(--text-tertiary))] mt-1">
+                    {new Date(msg.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                  </p>
+                </div>
+                {!msg.read && (
+                  <button
+                    onClick={() => markAsRead(msg.id)}
+                    className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-lg transition-colors flex-shrink-0"
+                    title="Mark as read"
+                  >
+                    <HiOutlineEye className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Quick Links */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
