@@ -25,8 +25,11 @@ export const updateProfileSchema = z.object({
 });
 
 export const googleAuthSchema = z.object({
-  credential: z.string().min(1, 'Google credential is required'),
+  credential: z.string().min(1).optional(),
+  code: z.string().min(1).optional(),
   role: z.enum(['CREATOR', 'EVENTEE']).optional(),
+}).refine(data => data.credential || data.code, {
+  message: 'Either credential or code is required',
 });
 
 export const githubAuthSchema = z.object({

@@ -2,22 +2,21 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import toast from 'react-hot-toast';
-import { HiOutlineMoon, HiOutlineSun, HiOutlineEye, HiOutlineEyeOff, HiX } from 'react-icons/hi';
+import { HiOutlineMoon, HiOutlineSun, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
+import { FcGoogle } from 'react-icons/fc';
 import { FaGithub } from 'react-icons/fa';
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || '';
 
 export default function Login() {
-  const { login, socialLogin } = useAuth();
+  const { login } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [pendingCredential, setPendingCredential] = useState<string | null>(null);
-  const [showRoleModal, setShowRoleModal] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,45 +32,10 @@ export default function Login() {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
-    const credential = credentialResponse.credential;
-    if (!credential) {
-      toast.error('Google sign-in failed — no credential received');
-      return;
-    }
-    setLoading(true);
-    try {
-      await socialLogin('google', { credential });
-      toast.success('Welcome back!');
-      navigate('/events');
-    } catch (err: any) {
-      const msg: string = err.response?.data?.message || '';
-      if (msg.toLowerCase().includes('role is required') || msg.toLowerCase().includes('sign up first')) {
-        // New user — show role selection modal
-        setPendingCredential(credential);
-        setShowRoleModal(true);
-      } else {
-        toast.error(msg || 'Google sign-in failed');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRoleSelect = async (role: string) => {
-    if (!pendingCredential) return;
-    setShowRoleModal(false);
-    setLoading(true);
-    try {
-      await socialLogin('google', { credential: pendingCredential, role });
-      toast.success('Account created successfully!');
-      navigate('/events');
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Sign-up failed');
-    } finally {
-      setLoading(false);
-      setPendingCredential(null);
-    }
+  const handleGoogleLogin = () => {
+    sessionStorage.removeItem('google_oauth_role');
+    const redirectUri = `${window.location.origin}/auth/google/callback`;
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent('openid email profile')}&access_type=offline&prompt=select_account`;
   };
 
   const handleGitHubLogin = () => {
@@ -156,17 +120,17 @@ export default function Login() {
 
           {/* Social Buttons */}
           <div className="space-y-3">
-            <div className="flex justify-center [&>div]:!w-full">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => toast.error('Google sign-in failed')}
-                theme={theme === 'dark' ? 'filled_black' : 'outline'}
-                size="large"
-                shape="rectangular"
-                text="signin_with"
-                width="400"
-              />
-            </div>
+            {GOOGLE_CLIENT_ID && (
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[rgb(var(--border-primary))] rounded-lg font-medium hover:bg-[rgb(var(--bg-secondary))] disabled:opacity-50 transition text-[rgb(var(--text-primary))]"
+              >
+                <FcGoogle className="w-5 h-5" />
+                Sign in with Google
+              </button>
+            )}
             {GITHUB_CLIENT_ID && (
               <button
                 type="button"
@@ -185,47 +149,6 @@ export default function Login() {
           </p>
         </div>
       </div>
-
-      {/* Role Selection Modal for new social login users */}
-      {showRoleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="w-full max-w-sm bg-[rgb(var(--bg-primary))] border border-[rgb(var(--border-primary))] rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-[rgb(var(--text-primary))]">Welcome to Eventful!</h2>
-              <button
-                type="button"
-                onClick={() => { setShowRoleModal(false); setPendingCredential(null); }}
-                className="p-1 text-[rgb(var(--text-tertiary))] hover:text-[rgb(var(--text-primary))] transition-colors"
-              >
-                <HiX className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-sm text-[rgb(var(--text-secondary))] mb-5">
-              It looks like you're new here. How would you like to use Eventful?
-            </p>
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => handleRoleSelect('EVENTEE')}
-                disabled={loading}
-                className="w-full px-4 py-3 rounded-lg border border-[rgb(var(--border-primary))] hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition text-left disabled:opacity-50"
-              >
-                <span className="font-semibold text-[rgb(var(--text-primary))]">Attend Events</span>
-                <p className="text-xs text-[rgb(var(--text-secondary))] mt-0.5">Discover and buy tickets to events</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleRoleSelect('CREATOR')}
-                disabled={loading}
-                className="w-full px-4 py-3 rounded-lg border border-[rgb(var(--border-primary))] hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition text-left disabled:opacity-50"
-              >
-                <span className="font-semibold text-[rgb(var(--text-primary))]">Create Events</span>
-                <p className="text-xs text-[rgb(var(--text-secondary))] mt-0.5">Host and manage your own events</p>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

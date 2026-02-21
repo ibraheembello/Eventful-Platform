@@ -2,15 +2,16 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 import { HiOutlineMoon, HiOutlineSun, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
+import { FcGoogle } from 'react-icons/fc';
 import { FaGithub } from 'react-icons/fa';
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || '';
 
 export default function Register() {
-  const { register, socialLogin } = useAuth();
+  const { register } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -37,22 +38,10 @@ export default function Register() {
     }
   };
 
-  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
-    const credential = credentialResponse.credential;
-    if (!credential) {
-      toast.error('Google sign-up failed — no credential received');
-      return;
-    }
-    setLoading(true);
-    try {
-      await socialLogin('google', { credential, role: form.role });
-      toast.success('Account created successfully!');
-      navigate('/events');
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Google sign-up failed');
-    } finally {
-      setLoading(false);
-    }
+  const handleGoogleRegister = () => {
+    sessionStorage.setItem('google_oauth_role', form.role);
+    const redirectUri = `${window.location.origin}/auth/google/callback`;
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent('openid email profile')}&access_type=offline&prompt=select_account`;
   };
 
   const handleGitHubRegister = () => {
@@ -114,17 +103,17 @@ export default function Register() {
 
           {/* Social Sign-Up */}
           <div className="space-y-3 mb-6">
-            <div className="flex justify-center [&>div]:!w-full">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => toast.error('Google sign-up failed')}
-                theme={theme === 'dark' ? 'filled_black' : 'outline'}
-                size="large"
-                shape="rectangular"
-                text="signup_with"
-                width="400"
-              />
-            </div>
+            {GOOGLE_CLIENT_ID && (
+              <button
+                type="button"
+                onClick={handleGoogleRegister}
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-3 py-2.5 px-4 border border-[rgb(var(--border-primary))] rounded-lg font-medium hover:bg-[rgb(var(--bg-secondary))] disabled:opacity-50 transition text-[rgb(var(--text-primary))]"
+              >
+                <FcGoogle className="w-5 h-5" />
+                Sign up with Google
+              </button>
+            )}
             {GITHUB_CLIENT_ID && (
               <button
                 type="button"

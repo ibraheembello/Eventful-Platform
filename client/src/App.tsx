@@ -22,6 +22,7 @@ import AttendeeList from './pages/AttendeeList';
 import PromoCodes from './pages/PromoCodes';
 import MyWaitlists from './pages/MyWaitlists';
 import GitHubCallback from './pages/GitHubCallback';
+import GoogleCallback from './pages/GoogleCallback';
 
 function HomeRoute() {
   return <LandingPage />;
@@ -38,6 +39,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/auth/github/callback" element={<GitHubCallback />} />
+          <Route path="/auth/google/callback" element={<GoogleCallback />} />
 
           <Route element={<Layout />}>
             <Route path="/events" element={<ErrorBoundary><Events /></ErrorBoundary>} />
