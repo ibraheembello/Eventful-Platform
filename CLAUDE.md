@@ -450,20 +450,23 @@ aws ec2 start-instances --instance-ids <instance-id>
 aws ec2 reboot-instances --instance-ids <instance-id>
 ```
 
-### Git Deployment
+### Git Deployment (Automated via CI/CD)
 
 ```bash
-# Deploy latest changes (on EC2)
-cd /home/bitnami/Eventful-Platform
-export PATH=/opt/bitnami/node/bin:$PATH
-git pull origin master
-npm install
-pm2 restart eventful-api
-
-# Deploy to GitHub (locally)
+# AUTOMATIC: Just push to master — CI/CD handles everything
 git add .
 git commit -m "Your commit message"
 git push origin master
+# GitHub Actions will: test → build → SSH deploy to EC2 (~2 min)
+
+# Manual deploy (if CI/CD is down or for emergency fixes)
+ssh -i ~/.ssh/lightsail_key.pem bitnami@13.43.80.112
+export PATH=/opt/bitnami/node/bin:$PATH
+cd /home/bitnami/Eventful-Platform
+git stash && git pull origin master
+npx prisma generate && npx prisma migrate deploy
+npm run build:backend && npm run build:frontend
+pm2 reload eventful-api
 
 # View remotes
 git remote -v
@@ -1334,9 +1337,11 @@ Also fixed: New users clicking social login on the Login page (no role) now see 
 **F18a — CI/CD Pipeline**:
 - GitHub Actions workflow at `.github/workflows/deploy.yml`
 - `test-and-build` job: checkout, Node 20, npm install, prisma generate, test, build backend + frontend
-- `deploy` job: SSH into EC2 via `appleboy/ssh-action`, git pull, prisma migrate, build, pm2 reload
-- Triggers on push to `master` and PRs
+- `deploy` job: raw SSH (writes key to temp file, runs deploy commands, cleans up) — chosen over `appleboy/ssh-action` which had RSA key parsing issues (`crypto/rsa: invalid modulus`)
+- Triggers on push to `master` and PRs (deploy only runs on push to master)
 - Requires GitHub Secrets: `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`
+- Integration tests auto-skip in CI (no DATABASE_URL) via `describe.skip`
+- GitHub Secrets set via `gh` CLI to avoid clipboard paste corruption
 
 **F18b — User Dashboard**:
 - New module: `src/modules/dashboard/` (service, controller, routes)
@@ -1414,12 +1419,21 @@ Also fixed: New users clicking social login on the Login page (no role) now see 
 - `client/src/pages/LandingPage.tsx` — 4 new feature cards + footer entries, hero CTA → /dashboard
 - `client/package.json` — leaflet, react-leaflet, @types/leaflet dependencies
 
-**CI/CD GitHub Secrets Setup**:
-1. Go to https://github.com/ibraheembello/Eventful-Platform/settings/secrets/actions
-2. Click "New repository secret" for each:
-   - `EC2_HOST` = `13.43.80.112`
-   - `EC2_USER` = `bitnami`
-   - `EC2_SSH_KEY` = full contents of `~/.ssh/lightsail_key.pem`
+**CI/CD GitHub Secrets Setup** (recommended: use `gh` CLI to avoid paste issues):
+```bash
+# Install gh CLI and authenticate
+gh auth login --hostname github.com --git-protocol https --web
+# Set secrets programmatically (no clipboard corruption)
+echo "13.43.80.112" | gh secret set EC2_HOST --repo ibraheembello/Eventful-Platform
+echo "bitnami" | gh secret set EC2_USER --repo ibraheembello/Eventful-Platform
+gh secret set EC2_SSH_KEY --repo ibraheembello/Eventful-Platform < ~/.ssh/lightsail_key.pem
+```
+Manual alternative: GitHub repo → Settings → Secrets and variables → Actions → New repository secret
+
+**CI/CD Troubleshooting**:
+- `crypto/rsa: invalid modulus` → SSH key corrupted during paste. Use `gh` CLI to set the secret, or raw SSH instead of `appleboy/ssh-action`
+- Integration tests fail in CI → Expected; they auto-skip when `DATABASE_URL` is absent
+- Deploy timeout → Check EC2 security group allows port 22 from `0.0.0.0/0` (GitHub Actions IPs vary)
 
 ---
 
