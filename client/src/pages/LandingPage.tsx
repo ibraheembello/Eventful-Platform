@@ -11,6 +11,7 @@ import {
   HiOutlineSearch, HiOutlineChatAlt2, HiOutlineMail, HiOutlinePhotograph,
   HiOutlineTag, HiOutlineSwitchHorizontal, HiOutlineClock,
   HiOutlineGlobeAlt, HiOutlineLightBulb, HiOutlineHeart,
+  HiOutlineViewGrid,
 } from 'react-icons/hi';
 import api from '../lib/api';
 import type { Event } from '../types';
@@ -1042,6 +1043,12 @@ export default function LandingPage() {
                 title: 'Social Sign-In',
                 description: 'Sign in with Google or GitHub. Forgot your password? Reset it securely via email.',
                 color: 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400',
+              },
+              {
+                icon: <HiOutlineViewGrid className="w-6 h-6" />,
+                title: 'Browse by Category',
+                description: 'Explore events by category — Music, Tech, Sports, Art, and more.',
+                color: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400',
               },
             ].map((feature) => (
               <div

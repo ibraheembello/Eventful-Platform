@@ -104,6 +104,27 @@ export class EventService {
     return categories;
   }
 
+  static async getCategoriesWithCounts() {
+    const cacheKey = 'events:categories:counts';
+    const cached = await Cache.get<Array<{ category: string; count: number }>>(cacheKey);
+    if (cached) return cached;
+
+    const results = await prisma.event.groupBy({
+      by: ['category'],
+      _count: { id: true },
+      where: { category: { not: null } },
+      orderBy: { _count: { id: 'desc' } },
+    });
+
+    const categories = results.map((r) => ({
+      category: r.category!,
+      count: r._count.id,
+    }));
+
+    await Cache.set(cacheKey, categories, 300);
+    return categories;
+  }
+
   static async getById(id: string) {
     const cacheKey = `events:${id}`;
     const cached = await Cache.get(cacheKey);

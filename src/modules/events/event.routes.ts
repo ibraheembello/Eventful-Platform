@@ -100,6 +100,35 @@ router.get('/categories', EventController.getCategories);
 
 /**
  * @swagger
+ * /events/categories/counts:
+ *   get:
+ *     summary: Get all event categories with event counts
+ *     tags: [Events]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: List of categories with event counts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       category:
+ *                         type: string
+ *                       count:
+ *                         type: integer
+ */
+router.get('/categories/counts', EventController.getCategoriesWithCounts);
+
+/**
+ * @swagger
  * /events/bookmarks:
  *   get:
  *     summary: Get user's bookmarked events
