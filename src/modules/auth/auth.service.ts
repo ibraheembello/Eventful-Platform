@@ -214,26 +214,35 @@ export class AuthService {
   }
 
   static async githubLogin(input: GitHubAuthInput) {
-    // Exchange code for access token
-    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
-        code: input.code,
-      }),
-    });
+    let accessToken: string;
 
-    const tokenData = await tokenResponse.json() as { error?: string; access_token?: string };
-    if (tokenData.error || !tokenData.access_token) {
-      throw ApiError.unauthorized('Failed to authenticate with GitHub');
+    if (input.accessToken) {
+      // Retry with saved access token (after role selection)
+      accessToken = input.accessToken;
+    } else if (input.code) {
+      // Exchange code for access token
+      const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: process.env.GITHUB_CLIENT_ID,
+          client_secret: process.env.GITHUB_CLIENT_SECRET,
+          code: input.code,
+        }),
+      });
+
+      const tokenData = await tokenResponse.json() as { error?: string; access_token?: string };
+      if (tokenData.error || !tokenData.access_token) {
+        throw ApiError.unauthorized('Failed to authenticate with GitHub');
+      }
+
+      accessToken = tokenData.access_token;
+    } else {
+      throw ApiError.badRequest('Either code or accessToken is required');
     }
-
-    const accessToken = tokenData.access_token;
 
     // Fetch user profile
     const profileResponse = await fetch('https://api.github.com/user', {
@@ -278,7 +287,8 @@ export class AuthService {
     } else {
       // New user — role is required
       if (!input.role) {
-        throw ApiError.badRequest('Role is required for new accounts. Please sign up first.');
+        // Return the access token so frontend can retry with role selection
+        return { needsRole: true, githubAccessToken: accessToken } as any;
       }
 
       const nameParts = (profile.name || profile.login || '').split(' ');

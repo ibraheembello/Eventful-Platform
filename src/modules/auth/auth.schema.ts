@@ -30,8 +30,11 @@ export const googleAuthSchema = z.object({
 });
 
 export const githubAuthSchema = z.object({
-  code: z.string().min(1, 'GitHub authorization code is required'),
+  code: z.string().min(1, 'GitHub authorization code is required').optional(),
+  accessToken: z.string().min(1).optional(),
   role: z.enum(['CREATOR', 'EVENTEE']).optional(),
+}).refine(data => data.code || data.accessToken, {
+  message: 'Either code or accessToken is required',
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
