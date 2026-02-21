@@ -23,8 +23,11 @@ jest.mock('../../src/config/database', () => ({
       count: jest.fn(),
     },
     ticket: {
-      count: jest.fn(),
-      findMany: jest.fn(),
+      count: jest.fn().mockResolvedValue(0),
+      findMany: jest.fn().mockResolvedValue([]),
+    },
+    eventCollaborator: {
+      findUnique: jest.fn().mockResolvedValue(null),
     },
   },
 }));
@@ -65,7 +68,7 @@ describe('EventService', () => {
 
       (prisma.event.create as jest.Mock).mockResolvedValue(mockEvent);
 
-      const result = await EventService.create('creator-id-123', input);
+      const result = await EventService.create('creator-id-123', input) as any;
 
       expect(result.title).toBe(input.title);
       expect(result.creatorId).toBe('creator-id-123');

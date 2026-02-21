@@ -75,6 +75,7 @@ describe('PaymentService', () => {
         title: 'Test Event',
         price: 5000,
         capacity: 100,
+        ticketTypes: [],
       });
 
       (prisma.ticket.count as jest.Mock).mockResolvedValue(10);
@@ -114,6 +115,7 @@ describe('PaymentService', () => {
         id: 'event-123',
         price: 5000,
         capacity: 10,
+        ticketTypes: [],
       });
 
       (prisma.ticket.count as jest.Mock).mockResolvedValue(10);
@@ -128,6 +130,7 @@ describe('PaymentService', () => {
         id: 'event-123',
         price: 5000,
         capacity: 100,
+        ticketTypes: [],
       });
 
       (prisma.ticket.count as jest.Mock).mockResolvedValue(5);
