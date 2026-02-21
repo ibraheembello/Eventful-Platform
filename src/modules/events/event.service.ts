@@ -7,9 +7,14 @@ import { generateShareLinks, ShareLinks } from '../../utils/shareLink';
 
 export class EventService {
   static async create(creatorId: string, input: CreateEventInput) {
+    if (input.recurrence) {
+      return this.createSeries(creatorId, input);
+    }
+
+    const { recurrence: _unused, ...eventData } = input;
     const event = await prisma.event.create({
       data: {
-        ...input,
+        ...eventData,
         date: new Date(input.date),
         creatorId,
       },
@@ -23,6 +28,137 @@ export class EventService {
     await Cache.delPattern('events:*');
 
     return event;
+  }
+
+  private static async createSeries(creatorId: string, input: CreateEventInput) {
+    const { recurrence, ...eventFields } = input;
+    if (!recurrence) throw ApiError.badRequest('Recurrence is required');
+
+    const baseDate = new Date(input.date);
+    const dates: Date[] = [];
+
+    for (let i = 0; i < recurrence.occurrences; i++) {
+      const d = new Date(baseDate);
+      if (recurrence.pattern === 'WEEKLY') {
+        d.setDate(d.getDate() + i * 7);
+      } else if (recurrence.pattern === 'BIWEEKLY') {
+        d.setDate(d.getDate() + i * 14);
+      } else {
+        // MONTHLY — same day next month(s)
+        d.setMonth(d.getMonth() + i);
+      }
+      dates.push(d);
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const series = await tx.eventSeries.create({
+        data: {
+          title: eventFields.title,
+          recurrencePattern: recurrence.pattern,
+          totalOccurrences: recurrence.occurrences,
+          creatorId,
+        },
+      });
+
+      const events = [];
+      for (let i = 0; i < dates.length; i++) {
+        const event = await tx.event.create({
+          data: {
+            title: eventFields.title,
+            description: eventFields.description,
+            date: dates[i],
+            location: eventFields.location,
+            price: eventFields.price,
+            capacity: eventFields.capacity,
+            imageUrl: eventFields.imageUrl,
+            category: eventFields.category,
+            defaultReminderValue: eventFields.defaultReminderValue,
+            defaultReminderUnit: eventFields.defaultReminderUnit,
+            creatorId,
+            seriesId: series.id,
+            seriesOccurrence: i + 1,
+          },
+          include: {
+            creator: {
+              select: { id: true, firstName: true, lastName: true, email: true },
+            },
+          },
+        });
+        events.push(event);
+      }
+
+      return { series, events };
+    });
+
+    await Cache.delPattern('events:*');
+    return result;
+  }
+
+  static async getSeriesEvents(seriesId: string, page = 1, limit = 10) {
+    const series = await prisma.eventSeries.findUnique({
+      where: { id: seriesId },
+      include: {
+        creator: { select: { id: true, firstName: true, lastName: true } },
+      },
+    });
+    if (!series) throw ApiError.notFound('Series not found');
+
+    const [events, total] = await Promise.all([
+      prisma.event.findMany({
+        where: { seriesId },
+        include: {
+          creator: { select: { id: true, firstName: true, lastName: true } },
+          _count: { select: { tickets: true } },
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { date: 'asc' },
+      }),
+      prisma.event.count({ where: { seriesId } }),
+    ]);
+
+    return { series, events, total, page, limit };
+  }
+
+  static async deleteSeries(seriesId: string, creatorId: string) {
+    const series = await prisma.eventSeries.findUnique({ where: { id: seriesId } });
+    if (!series) throw ApiError.notFound('Series not found');
+    if (series.creatorId !== creatorId) throw ApiError.forbidden('You can only delete your own series');
+
+    // Fetch all events with active ticket holders for cancellation emails
+    const seriesEvents = await prisma.event.findMany({
+      where: { seriesId },
+      include: {
+        tickets: {
+          where: { status: 'ACTIVE' },
+          select: { user: { select: { email: true, firstName: true } } },
+        },
+      },
+    });
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Delete all events in the series (cascades tickets, payments, etc.)
+      const deleteResult = await tx.event.deleteMany({ where: { seriesId } });
+      await tx.eventSeries.delete({ where: { id: seriesId } });
+      return deleteResult.count;
+    });
+
+    await Cache.delPattern('events:*');
+
+    // Fire-and-forget cancellation emails
+    let notifiedCount = 0;
+    for (const event of seriesEvents) {
+      for (const ticket of event.tickets) {
+        notifiedCount++;
+        EmailService.sendEventCancellation(
+          ticket.user.email,
+          ticket.user.firstName,
+          event,
+        ).catch(() => {});
+      }
+    }
+
+    return { eventsDeleted: result, notifiedCount };
   }
 
   static async getAll(
@@ -73,6 +209,7 @@ export class EventService {
             select: { id: true, firstName: true, lastName: true },
           },
           _count: { select: { tickets: true } },
+          series: { select: { id: true, totalOccurrences: true } },
         },
         skip: (page - 1) * limit,
         take: limit,
@@ -138,6 +275,9 @@ export class EventService {
         },
         _count: { select: { tickets: true } },
         images: { orderBy: { order: 'asc' } },
+        series: {
+          select: { id: true, title: true, recurrencePattern: true, totalOccurrences: true },
+        },
       },
     });
 

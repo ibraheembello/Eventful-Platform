@@ -17,6 +17,15 @@ export interface EventImage {
   createdAt: string;
 }
 
+export interface EventSeries {
+  id: string;
+  title: string;
+  recurrencePattern: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
+  totalOccurrences: number;
+  creator?: { id: string; firstName: string; lastName: string };
+  createdAt: string;
+}
+
 export interface Event {
   id: string;
   title: string;
@@ -31,6 +40,9 @@ export interface Event {
   creator?: { id: string; firstName: string; lastName: string };
   _count?: { tickets: number };
   images?: EventImage[];
+  seriesId?: string;
+  series?: { id: string; title?: string; recurrencePattern?: string; totalOccurrences: number };
+  seriesOccurrence?: number;
   createdAt: string;
   updatedAt?: string;
 }

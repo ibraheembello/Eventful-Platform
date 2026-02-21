@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import {
   HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers,
   HiOutlineCurrencyDollar, HiOutlineSearch, HiOutlinePlus, HiOutlineTag,
-  HiOutlineFilter, HiOutlineX, HiOutlineBookmark, HiBookmark,
+  HiOutlineFilter, HiOutlineX, HiOutlineBookmark, HiBookmark, HiOutlineRefresh,
 } from 'react-icons/hi';
 import toast from 'react-hot-toast';
 
@@ -464,6 +464,16 @@ export default function Events() {
                         <HiOutlineBookmark className="w-5 h-5 text-white" />
                       )}
                     </button>
+
+                    {/* Series Badge */}
+                    {event.seriesOccurrence && event.series && (
+                      <div className="absolute top-3 right-12">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600/90 text-white">
+                          <HiOutlineRefresh className="w-3 h-3" />
+                          {event.seriesOccurrence}/{event.series.totalOccurrences}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Status Badges */}
                     {soldOut && (

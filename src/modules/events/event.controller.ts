@@ -6,8 +6,48 @@ import { param } from '../../utils/param';
 export class EventController {
   static async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const event = await EventService.create(req.user!.userId, req.body);
-      ApiResponse.created(res, event, 'Event created successfully');
+      const result = await EventService.create(req.user!.userId, req.body);
+      if ('series' in result) {
+        ApiResponse.created(res, result, `Series created with ${(result as any).events.length} events!`);
+      } else {
+        ApiResponse.created(res, result, 'Event created successfully');
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getSeriesEvents(req: Request, res: Response, next: NextFunction) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const result = await EventService.getSeriesEvents(param(req, 'seriesId'), page, limit);
+      res.json({
+        success: true,
+        data: {
+          series: (result as any).series,
+          events: (result as any).events,
+        },
+        pagination: {
+          page,
+          limit,
+          total: (result as any).total,
+          totalPages: Math.ceil((result as any).total / limit),
+        },
+        message: 'Series events retrieved successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async deleteSeries(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await EventService.deleteSeries(param(req, 'seriesId'), req.user!.userId);
+      const message = result.notifiedCount > 0
+        ? `Series deleted (${result.eventsDeleted} events). ${result.notifiedCount} ticket holder(s) will be notified.`
+        : `Series deleted (${result.eventsDeleted} events).`;
+      ApiResponse.success(res, result, message);
     } catch (error) {
       next(error);
     }
