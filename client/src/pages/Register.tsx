@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { HiOutlineMoon, HiOutlineSun, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
 import { FcGoogle } from 'react-icons/fc';
 import { FaGithub } from 'react-icons/fa';
+import { LogoFull } from '../components/Logo';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || '';
@@ -64,9 +65,7 @@ export default function Register() {
       </div>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
-            Eventful
-          </Link>
+          <Link to="/"><LogoFull size={32} /></Link>
         </div>
         <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-8">
           <h1 className="text-2xl font-bold text-[rgb(var(--text-primary))] mb-1">Create an account</h1>

@@ -5,6 +5,7 @@ import { HiOutlineTicket, HiOutlineBell, HiOutlineChartBar, HiOutlineCalendar, H
 import { useState, useRef, useEffect, useCallback } from 'react';
 import api from '../lib/api';
 import ChatBot from './ChatBot';
+import { LogoFull } from './Logo';
 
 function NavDropdown({ label, icon, children }: { label: string; icon: React.ReactNode; children: (close: () => void) => React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -82,7 +83,7 @@ export default function Layout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link to="/" className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">Eventful</Link>
+              <Link to="/"><LogoFull size={28} /></Link>
               <div className="hidden md:flex ml-10 space-x-1">
                 <Link to="/" className="flex items-center gap-1 px-3 py-2 text-sm text-[rgb(var(--text-primary))] hover:text-emerald-600 dark:hover:text-emerald-400 rounded-md hover:bg-[rgb(var(--bg-secondary))] transition-colors">
                   <HiOutlineHome className="w-4 h-4" /> Home
