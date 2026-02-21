@@ -36,6 +36,7 @@ jobs:
           chmod 600 /tmp/deploy_key
           ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$EC2_USER@$EC2_HOST" << 'DEPLOY_SCRIPT'
             export PATH=/opt/bitnami/node/bin:$PATH
+            export NODE_OPTIONS="--max-old-space-size=1024"
             cd /home/bitnami/Eventful-Platform
             git stash && git pull origin master
             npx prisma generate && npx prisma migrate deploy
