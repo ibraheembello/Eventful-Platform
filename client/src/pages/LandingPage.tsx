@@ -18,6 +18,7 @@ import api from '../lib/api';
 import type { Event } from '../types';
 import { format } from 'date-fns';
 import ChatBot from '../components/ChatBot';
+import { LogoFull, LogoIcon } from '../components/Logo';
 
 /* ─── Scroll Reveal Hook ─── */
 
@@ -117,7 +118,7 @@ function PhoneMockup() {
           </div>
           {/* App header */}
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Eventful</span>
+            <span className="inline-flex items-center gap-1"><LogoIcon size={16} /><span className="text-sm font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Eventful</span></span>
             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[8px] font-bold">IB</div>
           </div>
           {/* Search */}
@@ -458,7 +459,7 @@ function WaitlistMockup() {
           </div>
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <span className="text-sm font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Eventful</span>
+            <span className="inline-flex items-center gap-1"><LogoIcon size={16} /><span className="text-sm font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Eventful</span></span>
             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[8px] font-bold">IB</div>
           </div>
 
@@ -606,9 +607,7 @@ export default function LandingPage() {
       {/* ─── Navbar ─── */}
       <nav className="sticky top-0 z-50 backdrop-blur-xl bg-[rgb(var(--bg-primary))]/80 border-b border-[rgb(var(--border-primary))]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
-          <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
-            Eventful
-          </span>
+          <LogoFull size={28} />
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-6">
             <Link to="/events" className="text-sm text-[rgb(var(--text-secondary))] hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Events</Link>
@@ -1526,10 +1525,8 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
             {/* Brand */}
             <div className="md:col-span-1">
-              <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
-                Eventful
-              </span>
-              <p className="text-sm text-[rgb(var(--text-tertiary))] mt-2 max-w-xs">
+              <LogoFull size={28} />
+              <p className="text-sm text-[rgb(var(--text-tertiary))] mt-3 max-w-xs">
                 The complete event management platform for creators and attendees.
               </p>
             </div>

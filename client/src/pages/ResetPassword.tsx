@@ -3,6 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import api from '../lib/api';
 import { HiOutlineMoon, HiOutlineSun, HiOutlineCheckCircle, HiOutlineLockClosed, HiOutlineEye, HiOutlineEyeOff } from 'react-icons/hi';
+import { LogoFull } from '../components/Logo';
 
 export default function ResetPassword() {
   const { theme, toggleTheme } = useTheme();
@@ -65,9 +66,7 @@ export default function ResetPassword() {
       </div>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
-            Eventful
-          </Link>
+          <Link to="/"><LogoFull size={32} /></Link>
         </div>
         <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl p-8">
           {success ? (

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import type { WaitlistEntry } from '../types';
 import { format } from 'date-fns';
+import { LogoIcon } from '../components/Logo';
 import toast from 'react-hot-toast';
 import {
   HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineUsers,
@@ -110,7 +111,7 @@ export default function MyWaitlists() {
                       </div>
                       {/* App header */}
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Eventful</span>
+                        <span className="inline-flex items-center gap-1"><LogoIcon size={12} /><span className="text-xs font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Eventful</span></span>
                         <div className="w-5 h-5 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[7px] font-bold">U</div>
                       </div>
 
