@@ -92,7 +92,7 @@ export default function MyWaitlists() {
           {/* Hero empty state */}
           <div className="glass border border-[rgb(var(--border-primary))] rounded-2xl overflow-hidden">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-              {/* Left — Phone mockup showing the waitlist flow */}
+              {/* Left - Phone mockup showing the waitlist flow */}
               <div className="relative bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-amber-950/30 dark:via-orange-950/20 dark:to-slate-900 p-8 sm:p-12 flex justify-center items-center">
                 <div className="absolute top-6 left-6 w-32 h-32 bg-amber-300/20 dark:bg-amber-500/10 rounded-full blur-3xl" />
                 <div className="absolute bottom-6 right-6 w-40 h-40 bg-orange-300/20 dark:bg-orange-500/10 rounded-full blur-3xl" />
@@ -173,7 +173,7 @@ export default function MyWaitlists() {
                 </div>
               </div>
 
-              {/* Right — Text content */}
+              {/* Right - Text content */}
               <div className="p-8 sm:p-12 flex flex-col justify-center">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-medium mb-4 w-fit">
                   <HiOutlineClock className="w-3.5 h-3.5" /> Waitlist
@@ -249,7 +249,7 @@ export default function MyWaitlists() {
           {/* Feature highlights */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { icon: <HiOutlineCheck className="w-4 h-4" />, text: 'Automatic position tracking — know exactly where you stand' },
+              { icon: <HiOutlineCheck className="w-4 h-4" />, text: 'Automatic position tracking - know exactly where you stand' },
               { icon: <HiOutlineCheck className="w-4 h-4" />, text: 'Instant notifications when a ticket becomes available' },
               { icon: <HiOutlineCheck className="w-4 h-4" />, text: 'Leave the waitlist anytime with one click' },
               { icon: <HiOutlineCheck className="w-4 h-4" />, text: 'Creators see waitlist analytics in their dashboard' },

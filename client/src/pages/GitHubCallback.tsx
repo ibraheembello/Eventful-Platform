@@ -47,11 +47,11 @@ export default function GitHubCallback() {
       .then((res) => {
         const data = res.data.data;
         if (data.needsRole) {
-          // New user without role — show role selection
+          // New user without role - show role selection
           setGithubAccessToken(data.githubAccessToken);
           setShowRoleModal(true);
         } else {
-          // Existing user or new user with role — complete login
+          // Existing user or new user with role - complete login
           localStorage.setItem('accessToken', data.accessToken);
           localStorage.setItem('refreshToken', data.refreshToken);
           // Trigger auth context reload by navigating

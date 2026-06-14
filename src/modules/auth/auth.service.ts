@@ -142,7 +142,7 @@ export class AuthService {
     let picture: string | undefined;
 
     if (input.code) {
-      // Authorization code flow — exchange code for tokens
+      // Authorization code flow - exchange code for tokens
       try {
         const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
           method: 'POST',
@@ -175,7 +175,7 @@ export class AuthService {
         throw ApiError.unauthorized('Failed to authenticate with Google');
       }
     } else if (input.credential) {
-      // Credential flow — verify ID token or access token
+      // Credential flow - verify ID token or access token
       try {
         const ticket = await googleClient.verifyIdToken({
           idToken: input.credential,
@@ -189,7 +189,7 @@ export class AuthService {
         family_name = payload.family_name;
         picture = payload.picture;
       } catch {
-        // Credential might be an access token — call userinfo
+        // Credential might be an access token - call userinfo
         try {
           const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
             headers: { Authorization: `Bearer ${input.credential}` },
@@ -227,7 +227,7 @@ export class AuthService {
         });
       }
     } else {
-      // New user — role is required
+      // New user - role is required
       if (!input.role) {
         throw ApiError.badRequest('Role is required for new accounts. Please sign up first.');
       }
@@ -299,7 +299,7 @@ export class AuthService {
       throw ApiError.unauthorized('Failed to fetch GitHub profile');
     }
 
-    // Get email — may be private
+    // Get email - may be private
     let email = profile.email;
     if (!email) {
       const emailsResponse = await fetch('https://api.github.com/user/emails', {
@@ -333,7 +333,7 @@ export class AuthService {
         });
       }
     } else {
-      // New user — role is required
+      // New user - role is required
       if (!input.role) {
         // Return the access token so frontend can retry with role selection
         return { needsRole: true, githubAccessToken: accessToken } as any;

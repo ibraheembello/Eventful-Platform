@@ -72,7 +72,7 @@ const DEFAULT_CONFIG = {
   bg: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
 };
 
-// All known categories — show even if count is 0
+// All known categories - show even if count is 0
 const ALL_CATEGORIES = [
   'Music', 'Technology', 'Art', 'Entertainment', 'Sports',
   'Education', 'Business', 'Food & Drink', 'Health', 'Other',
@@ -141,7 +141,7 @@ export default function Categories() {
           Browse Categories
         </h1>
         <p className="mt-3 text-[rgb(var(--text-secondary))] text-lg max-w-2xl mx-auto">
-          Explore events by category — find exactly what you're looking for.
+          Explore events by category - find exactly what you're looking for.
         </p>
       </div>
 

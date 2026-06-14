@@ -219,14 +219,14 @@ export class EmailService {
       </p>
       ${button('Reset Password', resetUrl)}
       <p style="color:#6b7280;line-height:1.6;margin:0 0 16px">
-        This link will expire in <strong style="color:#111827">1 hour</strong>. If you didn't request a password reset, you can safely ignore this email — your password will remain unchanged.
+        This link will expire in <strong style="color:#111827">1 hour</strong>. If you didn't request a password reset, you can safely ignore this email - your password will remain unchanged.
       </p>
       <p style="color:#9ca3af;font-size:12px;margin:16px 0 0;line-height:1.5">
         If the button doesn't work, copy and paste this URL into your browser:<br/>
         <a href="${resetUrl}" style="color:#059669;word-break:break-all">${resetUrl}</a>
       </p>
     `);
-    await this.send(email, 'Reset Your Password — Eventful', html);
+    await this.send(email, 'Reset Your Password - Eventful', html);
   }
 
   static async sendTicketTransferSent(

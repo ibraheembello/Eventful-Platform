@@ -215,7 +215,7 @@ export class TicketService {
     if (ticket.status !== 'ACTIVE') throw ApiError.badRequest('Only active tickets can be transferred');
 
     const recipient = await prisma.user.findUnique({ where: { email: recipientEmail } });
-    if (!recipient) throw ApiError.notFound('Recipient not found — they must have an Eventful account');
+    if (!recipient) throw ApiError.notFound('Recipient not found - they must have an Eventful account');
     if (recipient.id === fromUserId) throw ApiError.badRequest('You cannot transfer a ticket to yourself');
 
     // Check recipient doesn't already have a ticket for this event

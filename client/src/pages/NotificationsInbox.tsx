@@ -58,7 +58,7 @@ export default function NotificationsInbox() {
           prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
         );
       } catch {
-        // silent — navigation still happens
+        // silent - navigation still happens
       }
     }
     if (notification.link) {
@@ -126,7 +126,7 @@ export default function NotificationsInbox() {
             No notifications yet
           </h3>
           <p className="text-[rgb(var(--text-secondary))]">
-            When something happens — ticket purchases, event updates, or invites — you'll see it here.
+            When something happens - ticket purchases, event updates, or invites - you'll see it here.
           </p>
         </div>
       ) : (

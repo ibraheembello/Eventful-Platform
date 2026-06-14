@@ -58,7 +58,7 @@ export class EventService {
       } else if (recurrence.pattern === 'BIWEEKLY') {
         d.setDate(d.getDate() + i * 14);
       } else {
-        // MONTHLY — same day next month(s)
+        // MONTHLY - same day next month(s)
         d.setMonth(d.getMonth() + i);
       }
       dates.push(d);
@@ -793,7 +793,7 @@ export class EventService {
 
     const ticketsSold = event._count.tickets;
     if (ticketsSold < event.capacity) {
-      throw ApiError.badRequest('Event is not sold out — you can still buy a ticket');
+      throw ApiError.badRequest('Event is not sold out - you can still buy a ticket');
     }
 
     const existing = await prisma.waitlist.findUnique({
@@ -1137,7 +1137,7 @@ export class EventService {
     if (event.creatorId !== creatorId) throw ApiError.forbidden('Only the event creator can invite collaborators');
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) throw ApiError.notFound('User not found — they must have an Eventful account');
+    if (!user) throw ApiError.notFound('User not found - they must have an Eventful account');
     if (user.id === creatorId) throw ApiError.badRequest('You cannot invite yourself');
     if (user.role !== 'CREATOR') throw ApiError.badRequest('Only users with CREATOR role can be co-hosts');
 

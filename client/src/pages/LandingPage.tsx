@@ -705,7 +705,7 @@ export default function LandingPage() {
                 Unforgettable Events
               </h1>
               <p className="text-lg sm:text-xl text-[rgb(var(--text-secondary))] mb-10 max-w-xl mx-auto lg:mx-0 animate-[fadeIn_1s_ease-out]">
-                From concert halls to conference rooms. Manage events, sell tickets with secure QR codes, track analytics, and grow your audience — all in one platform.
+                From concert halls to conference rooms. Manage events, sell tickets with secure QR codes, track analytics, and grow your audience - all in one platform.
               </p>
               <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start animate-[fadeIn_1.2s_ease-out]">
                 {user ? (
@@ -914,7 +914,7 @@ export default function LandingPage() {
                 {[
                   'Auto-notification when a ticket is cancelled',
                   'Real-time position tracking in the queue',
-                  'One-click join — no extra steps needed',
+                  'One-click join - no extra steps needed',
                   'Creators see waitlist analytics in dashboard',
                 ].map((item) => (
                   <div key={item} className="flex items-start gap-3">
@@ -1059,7 +1059,7 @@ export default function LandingPage() {
               {
                 icon: <HiOutlineViewGrid className="w-6 h-6" />,
                 title: 'Browse by Category',
-                description: 'Explore events by category — Music, Tech, Sports, Art, and more.',
+                description: 'Explore events by category - Music, Tech, Sports, Art, and more.',
                 color: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400',
               },
               {
@@ -1107,7 +1107,7 @@ export default function LandingPage() {
               {
                 icon: <HiOutlineLightBulb className="w-6 h-6" />,
                 title: 'Automated Deployments',
-                description: 'CI/CD pipeline with GitHub Actions — push to deploy automatically.',
+                description: 'CI/CD pipeline with GitHub Actions - push to deploy automatically.',
                 color: 'bg-lime-100 dark:bg-lime-900/40 text-lime-600 dark:text-lime-400',
               },
               {
@@ -1302,7 +1302,7 @@ export default function LandingPage() {
               {
                 icon: <HiOutlineLightBulb className="w-8 h-8" />,
                 title: 'Our Mission',
-                description: 'Making event management accessible to every creator — from small meetups to large festivals. No complexity, no ridiculous fees.',
+                description: 'Making event management accessible to every creator - from small meetups to large festivals. No complexity, no ridiculous fees.',
                 color: 'from-emerald-500 to-teal-600',
               },
               {
@@ -1314,7 +1314,7 @@ export default function LandingPage() {
               {
                 icon: <HiOutlineHeart className="w-8 h-8" />,
                 title: 'Open & Growing',
-                description: 'Open source and community-driven. We believe in building together — contributions, feedback, and ideas are always welcome.',
+                description: 'Open source and community-driven. We believe in building together - contributions, feedback, and ideas are always welcome.',
                 color: 'from-purple-500 to-pink-600',
               },
             ].map((item, i) => (
@@ -1350,7 +1350,7 @@ export default function LandingPage() {
               {
                 step: '2',
                 title: 'Create or discover events',
-                description: 'Publish your event with images, pricing, and capacity — or browse amazing events near you.',
+                description: 'Publish your event with images, pricing, and capacity - or browse amazing events near you.',
                 icon: <HiOutlineCalendar className="w-8 h-8" />,
               },
               {
@@ -1500,7 +1500,7 @@ export default function LandingPage() {
             Ready to create something amazing?
           </h2>
           <p className="text-emerald-100 text-lg sm:text-xl mb-10 max-w-2xl mx-auto">
-            Join event creators and attendees on Eventful. Start managing your events like a pro — for free.
+            Join event creators and attendees on Eventful. Start managing your events like a pro - for free.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link

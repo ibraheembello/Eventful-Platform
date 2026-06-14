@@ -24,9 +24,9 @@
 
 ---
 
-A production-deployed, full-stack event management platform built with Node.js, React, TypeScript, and PostgreSQL. Eventful enables event creators to publish events, sell tickets with secure QR codes, manage attendees, and track analytics — while attendees can discover events, purchase tickets, leave reviews, and receive real-time notifications.
+A production-deployed, full-stack event management platform built with Node.js, React, TypeScript, and PostgreSQL. Eventful enables event creators to publish events, sell tickets with secure QR codes, manage attendees, and track analytics - while attendees can discover events, purchase tickets, leave reviews, and receive real-time notifications.
 
-**AltSchool Africa Capstone Project** — Backend Engineering (Node.js) Track
+**AltSchool Africa Capstone Project** - Backend Engineering (Node.js) Track
 
 <p align="center">
   <img src="docs/screenshots/landing-page.png" alt="Eventful Landing Page" width="100%" />
@@ -54,11 +54,11 @@ A production-deployed, full-stack event management platform built with Node.js, 
 ## Features
 
 ### Core Platform
-- **JWT Authentication** — Register/login with email or social providers (Google, GitHub)
-- **Role-Based Access** — Three roles: EVENTEE (attendee), CREATOR, and ADMIN
-- **Event Management** — Full CRUD with image upload, categories, capacity tracking, and geocoding
-- **Secure Payments** — Paystack integration with webhook support and promo code discounts
-- **QR Code Tickets** — Cryptographically signed QR codes with camera-based scanner for verification
+- **JWT Authentication** - Register/login with email or social providers (Google, GitHub)
+- **Role-Based Access** - Three roles: EVENTEE (attendee), CREATOR, and ADMIN
+- **Event Management** - Full CRUD with image upload, categories, capacity tracking, and geocoding
+- **Secure Payments** - Paystack integration with webhook support and promo code discounts
+- **QR Code Tickets** - Cryptographically signed QR codes with camera-based scanner for verification
 
 ### 19 Feature Modules
 
@@ -85,18 +85,18 @@ A production-deployed, full-stack event management platform built with Node.js, 
 | F19 | **4-Feature Batch** | Landing page polish, working contact form, QR camera scanner, FAQ chatbot |
 
 ### Platform Capabilities
-- **Admin Panel** — User moderation, role management, event oversight, contact messages
-- **Personal Dashboard** — Aggregated stats, upcoming events, quick actions per role
-- **Interactive Maps** — Leaflet maps with geocoded event markers and nearby search
-- **In-App Notifications** — Real-time notification center with 30-second polling
-- **Event Co-Hosts** — Invite collaborators to help manage events
-- **Ticket Transfer** — Transfer tickets to other users by email
-- **Multi-Ticket Types** — VIP, Regular, Early Bird tiers with separate pricing
-- **Dark Mode** — System-aware theme with smooth transitions
-- **Chatbot** — Built-in FAQ assistant with support fallback
-- **CI/CD** — GitHub Actions auto-deploy on push to master
-- **Responsive Design** — Mobile-first UI across all 27+ pages
-- **Accessibility** — WCAG-compliant labels, ARIA attributes, keyboard navigation
+- **Admin Panel** - User moderation, role management, event oversight, contact messages
+- **Personal Dashboard** - Aggregated stats, upcoming events, quick actions per role
+- **Interactive Maps** - Leaflet maps with geocoded event markers and nearby search
+- **In-App Notifications** - Real-time notification center with 30-second polling
+- **Event Co-Hosts** - Invite collaborators to help manage events
+- **Ticket Transfer** - Transfer tickets to other users by email
+- **Multi-Ticket Types** - VIP, Regular, Early Bird tiers with separate pricing
+- **Dark Mode** - System-aware theme with smooth transitions
+- **Chatbot** - Built-in FAQ assistant with support fallback
+- **CI/CD** - GitHub Actions auto-deploy on push to master
+- **Responsive Design** - Mobile-first UI across all 27+ pages
+- **Accessibility** - WCAG-compliant labels, ARIA attributes, keyboard navigation
 
 ---
 
@@ -450,8 +450,8 @@ npm test -- tests/unit/auth.test.ts  # Single suite
 
 Push to `master` triggers the GitHub Actions pipeline:
 
-1. **Test & Build** — Install, generate Prisma client, run tests, build backend + frontend
-2. **Deploy** — SSH into EC2, pull latest code, migrate database, build, reload PM2
+1. **Test & Build** - Install, generate Prisma client, run tests, build backend + frontend
+2. **Deploy** - SSH into EC2, pull latest code, migrate database, build, reload PM2
 
 ```yaml
 # .github/workflows/deploy.yml
@@ -618,7 +618,7 @@ Eventful-Platform/
 ## Author
 
 **Ibrahim Bello**
-- AltSchool Africa — School of Software Engineering (Backend Node.js Track)
+- AltSchool Africa - School of Software Engineering (Backend Node.js Track)
 - GitHub: [@ibraheembello](https://github.com/ibraheembello)
 - Email: belloibrahimolawale@gmail.com
 
@@ -636,7 +636,7 @@ Eventful-Platform/
 
 ## License
 
-MIT License — feel free to use this project for learning purposes.
+MIT License - feel free to use this project for learning purposes.
 
 ---
 

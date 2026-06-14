@@ -46,7 +46,7 @@ export default function GoogleCallback() {
       .then((res) => {
         const data = res.data.data;
         if (data.needsRole) {
-          // New user without role — show role selection
+          // New user without role - show role selection
           setGoogleCode(code);
           setShowRoleModal(true);
         } else {

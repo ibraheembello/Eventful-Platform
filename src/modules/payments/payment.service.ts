@@ -30,7 +30,7 @@ export class PaymentService {
     let ticketTypeIdToStore: string | undefined;
 
     if (event.ticketTypes.length > 0) {
-      // Event has ticket types — ticketTypeId is required
+      // Event has ticket types - ticketTypeId is required
       if (!ticketTypeId) throw ApiError.badRequest('Ticket type is required for this event');
       const ticketType = event.ticketTypes.find((t) => t.id === ticketTypeId);
       if (!ticketType) throw ApiError.notFound('Ticket type not found');
@@ -45,7 +45,7 @@ export class PaymentService {
         throw ApiError.badRequest(`${ticketType.name} tickets are sold out`);
       }
     } else {
-      // Legacy flow — check overall capacity
+      // Legacy flow - check overall capacity
       const ticketCount = await prisma.ticket.count({ where: { eventId } });
       if (ticketCount >= event.capacity) {
         throw ApiError.badRequest('Event is sold out');
@@ -94,7 +94,7 @@ export class PaymentService {
 
     const reference = `EVT-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
 
-    // Free event or fully discounted — bypass Paystack, create ticket directly
+    // Free event or fully discounted - bypass Paystack, create ticket directly
     if (finalPrice === 0) {
       const payment = await prisma.payment.create({
         data: {
@@ -138,7 +138,7 @@ export class PaymentService {
       return { payment, ticket, free: true };
     }
 
-    // Paid event — go through Paystack
+    // Paid event - go through Paystack
     const response = await fetch(`${paystackConfig.baseUrl}/transaction/initialize`, {
       method: 'POST',
       headers: {
@@ -161,7 +161,7 @@ export class PaymentService {
       }),
     });
 
-    // Paystack returns a JSON object — typed as any since it's an external API response
+    // Paystack returns a JSON object - typed as any since it's an external API response
     const data: any = await response.json();
 
     if (!data.status) {

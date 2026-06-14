@@ -340,7 +340,7 @@ export default function AttendeeList() {
                           {format(new Date(attendee.scannedAt), 'h:mm a')}
                         </span>
                       ) : (
-                        <span className="text-xs text-[rgb(var(--text-tertiary))]">—</span>
+                        <span className="text-xs text-[rgb(var(--text-tertiary))]">-</span>
                       )}
                     </td>
                   </tr>

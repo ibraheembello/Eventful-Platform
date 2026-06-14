@@ -9,7 +9,7 @@ const config: Config = {
   collectCoverageFrom: ['src/**/*.ts', '!src/server.ts', '!src/config/**'],
   coverageDirectory: 'coverage',
   clearMocks: true,
-  // uuid v10+ ships ESM only — tell Jest to transform it with ts-jest
+  // uuid v10+ ships ESM only - tell Jest to transform it with ts-jest
   transformIgnorePatterns: [
     'node_modules/(?!(uuid)/)',
   ],

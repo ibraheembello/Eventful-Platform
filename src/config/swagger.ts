@@ -7,7 +7,7 @@ const options: swaggerJsdoc.Options = {
       title: 'Eventful API',
       version: '1.0.0',
       description:
-        'Eventful is more than just a ticketing platform — it\'s your passport to a world of unforgettable moments. This API powers event creation, ticket purchasing with QR codes, Paystack payments, notifications, analytics, and social sharing.',
+        'Eventful is more than just a ticketing platform - it\'s your passport to a world of unforgettable moments. This API powers event creation, ticket purchasing with QR codes, Paystack payments, notifications, analytics, and social sharing.',
       contact: {
         name: 'Eventful Support',
       },
