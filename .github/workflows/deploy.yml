@@ -35,10 +35,12 @@ jobs:
           echo "$EC2_SSH_KEY" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
           ssh -i /tmp/deploy_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$EC2_USER@$EC2_HOST" << 'DEPLOY_SCRIPT'
+            set -e
             export PATH=/opt/bitnami/node/bin:$PATH
-            export NODE_OPTIONS="--max-old-space-size=1024"
+            export NODE_OPTIONS="--max-old-space-size=1800"
             cd /home/bitnami/Eventful-Platform
-            git stash && git pull origin master
+            git fetch origin master
+            git reset --hard origin/master
             npx prisma generate && npx prisma migrate deploy
             npm run build:backend && npm run build:frontend
             pm2 reload eventful-api
